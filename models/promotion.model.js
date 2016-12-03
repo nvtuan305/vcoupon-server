@@ -4,7 +4,7 @@
 
 var mongoose = require('mongoose');
 
-var promotionSchema = mongoose.Schema({
+var promotionSchema = new mongoose.Schema({
     providerId: String,
 
     categoryTypeID: String,

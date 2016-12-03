@@ -4,7 +4,7 @@
 
 var mongoose = require('mongoose');
 
-var commentSchema = mongoose.Schema({
+var commentSchema = new mongoose.Schema({
     userId: String,
     promotionId: String,
     commentedAt: Number,

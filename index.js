@@ -6,8 +6,16 @@ var express = require('express'),
     cookieParser = require('cookie-parser'),
     bodyParser = require('body-parser');
 
+require('./models/category.model');
+require('./models/comment.model');
+require('./models/promotion.model');
+require('./models/token.model');
+require('./models/user.model');
+require('./models/voucher.model');
+
 // API routes
-var index = require('./routes/index');
+var index = require('./routes/index'),
+    category = require('./routes/category.router');
 
 var app = express();
 mongoose.connect();
@@ -26,6 +34,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Route API URL
 app.use('/', index);
+app.use('/api/v1', index);
+app.use('/api/v1/categories', category);
 
 // Catch 404 and forward to error handler
 app.use(function (req, res, next) {

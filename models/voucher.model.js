@@ -4,7 +4,7 @@
 
 var mongoose = require('mongoose');
 
-var voucherSchema = mongoose.Schema({
+var voucherSchema = new mongoose.Schema({
     title: String,
 
     userId: String,
