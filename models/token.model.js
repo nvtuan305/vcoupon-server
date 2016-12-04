@@ -7,7 +7,8 @@ var mongoose = require('mongoose');
 var tokenSchema = new mongoose.Schema({
     userId: String,
     accessToken: String,
-    refreshToken: String
+    refreshToken: String,
+    expireIn: Number
 });
 
 mongoose.model('Token', tokenSchema);

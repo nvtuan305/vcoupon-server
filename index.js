@@ -15,7 +15,8 @@ require('./models/voucher.model');
 
 // API routes
 var index = require('./routes/index'),
-    category = require('./routes/category.router');
+    category = require('./routes/category.router'),
+    user = require('./routes/users.router.js');
 
 var app = express();
 mongoose.connect();
@@ -36,6 +37,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', index);
 app.use('/api/v1', index);
 app.use('/api/v1/categories', category);
+app.use('/api/v1/users', user);
 
 // Catch 404 and forward to error handler
 app.use(function (req, res, next) {

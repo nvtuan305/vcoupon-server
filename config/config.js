@@ -17,6 +17,6 @@ module.exports = {
     },
 
     // Json web token secret key config
-    secretKey: 'VCoupon.haha.hehe'
+    secretKey: '717627413c4a2b40205d222a357e276f7827577b4b4b72574138695320'
 };
 

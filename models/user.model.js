@@ -10,6 +10,11 @@ var userSchema = new mongoose.Schema({
         default: 'VCoupon User'
     },
 
+    gender: {
+        type: String,
+        default: 'Khác'
+    },
+
     email: String,
 
     phoneNumber: String,
@@ -33,7 +38,7 @@ var userSchema = new mongoose.Schema({
 
     avatar: {
         type: String,
-        default: ''
+        default: 'https://firebasestorage.googleapis.com/v0/b/vcoupon-1275f.appspot.com/o/images%2Fdefault%2Favatar_circle_grey_128dp.png?alt=media&token=e93733b2-cf52-4361-ac7f-37828416c879'
     },
 
     rating: {
