@@ -1,3 +1,7 @@
-/**
- * Created by apismantis on 04/12/2016.
- */
+var express = require('express'),
+    router = express.Router();
+
+var promotionController = require('../controllers/promotion.controller');
+
+
+module.exports = router;

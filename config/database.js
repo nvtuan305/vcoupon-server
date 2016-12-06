@@ -2,7 +2,7 @@
  * Created by apismantis on 03/12/2016.
  */
 
-var config = require('./config'),
+var config = require('./development'),
     chalk = require('chalk'),
     mongoose = require('mongoose');
 
@@ -13,7 +13,7 @@ module.exports.connect = function () {
             console.error(chalk.red('Could not connect to mlab database!'));
             console.log(err);
         } else {
-            // Enable mongoose debug mode
+            // Enable database debug mode
             mongoose.set('debug', config.db.debug);
             console.info(chalk.bgGreen.bold('Connected to mlab database!'));
         }
@@ -24,7 +24,9 @@ module.exports.connect = function () {
 module.exports.disconnect = function () {
     mongoose.disconnect(function (err) {
         if (err) {
-            console.info(chalk.yellow('Disconnected to mlab database!'));
+            console.info(chalk.yellow('Can not disconnected to mlab database!'));
+        } else {
+            console.info(chalk.bgGreen.bold('Disconnected to mlab database!'));
         }
     });
 };

@@ -5,8 +5,7 @@
 'use strict';
 
 module.exports = {
-
-    // Database config
+    // Database development
     db: {
         uri: 'mongodb://admin:admin.vcoupon@ds045714.mlab.com:45714/vcoupon',
         account: {
@@ -15,8 +14,11 @@ module.exports = {
         },
         debug: true
     },
-
-    // Json web token secret key config
-    secretKey: '717627413c4a2b40205d222a357e276f7827577b4b4b72574138695320'
+    // Json web token config
+    token: {
+        // Random key - :">
+        secretKey: '717627413c4a2b40205d222a357e276f7827577b4b4b72574138695320',
+        algorithm: 'RS256'
+    }
 };
 

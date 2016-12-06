@@ -21,9 +21,15 @@ var promotionSchema = new mongoose.Schema({
         default: 'Điều kiện áp dụng voucher'
     },
 
-    startDate: Number,
+    startDate: {
+        type: Number,
+        default: 0
+    },
 
-    endDate: Number,
+    endDate: {
+        type: Number,
+        default: 0
+    },
 
     amountLimit: {
         type: Number,
@@ -42,7 +48,7 @@ var promotionSchema = new mongoose.Schema({
 
     discountType: {
         type: String,
-        default: '%'
+        default: '%' // % or VND
     },
 
     addresses: [{address: String}],

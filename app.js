@@ -1,11 +1,10 @@
 var express = require('express'),
-    mongoose = require('./config/mongoose'),
+    database = require('./config/database'),
     path = require('path'),
-    favicon = require('serve-favicon'),
     logger = require('morgan'),
-    cookieParser = require('cookie-parser'),
     bodyParser = require('body-parser');
 
+// Define model
 require('./models/category.model');
 require('./models/comment.model');
 require('./models/promotion.model');
@@ -14,30 +13,28 @@ require('./models/user.model');
 require('./models/voucher.model');
 
 // API routes
-var index = require('./routes/index'),
+var index = require('./routes/index.router'),
     category = require('./routes/category.router'),
-    user = require('./routes/users.router.js');
+    user = require('./routes/users.router.js'),
+    promotion = require('./routes/promotion.router');
 
 var app = express();
-mongoose.connect();
+database.connect();
 
 // View engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-// Uncomment after placing your favicon in /public
-// app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+// Register middleware
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Route API URL
 app.use('/', index);
-app.use('/api/v1', index);
 app.use('/api/v1/categories', category);
 app.use('/api/v1/users', user);
+app.use('/api/v1/promotions', promotion);
 
 // Catch 404 and forward to error handler
 app.use(function (req, res, next) {
