@@ -2,23 +2,32 @@
  * Created by apismantis on 03/12/2016.
  */
 
-var mongoose = require('mongoose');
+var mongoose = require('mongoose'),
+    config = require('../config/app');
+
+var ObjectId = mongoose.Schema.ObjectId;
 
 var promotionSchema = new mongoose.Schema({
-    providerId: String,
+    _providerId: {
+        type: ObjectId,
+        ref: 'User'
+    },
 
-    categoryTypeID: String,
+    _categoryTypeID: {
+        type: ObjectId,
+        ref: 'Category'
+    },
 
     title: String,
 
-    poster: {
+    cover: {
         type: String,
-        default: 'https://firebasestorage.googleapis.com/v0/b/vcoupon-1275f.appspot.com/o/images%2Fdefault%2Fcover_profile_background-min.jpg?alt=media&token=dbd6eae6-48e1-4ee4-9cbd-e7973314e989'
+        default: config.promotion.defaultCover
     },
 
     condition: {
         type: String,
-        default: 'Điều kiện áp dụng voucher'
+        default: config.promotion.defaultCondition
     },
 
     startDate: {
@@ -51,7 +60,7 @@ var promotionSchema = new mongoose.Schema({
         default: '%' // % or VND
     },
 
-    addresses: [{address: String}],
+    addresses: [String],
 
     pinnedCount: {
         type: Number,

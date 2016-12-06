@@ -3,24 +3,49 @@
  */
 
 var mongoose = require('mongoose');
+var ObjectId = mongoose.Schema.ObjectId;
 
 var voucherSchema = new mongoose.Schema({
     title: String,
 
-    userId: String,
+    _userId: {
+        type: ObjectId,
+        ref: 'User',
+        required: [true, 'User id is required.']
+    },
 
-    promotionId: String,
+    _promotionId: {
+        type: ObjectId,
+        ref: 'Promotion',
+        required: [true, 'Promotion id is required.']
+    },
 
-    providerId: String,
+    _providerId: {
+        type: ObjectId,
+        ref: 'User',
+        required: [true, 'Provider id is required.']
+    },
 
-    voucherCode: String,
+    voucherCode: {
+        type: String,
+        required: [true, 'Voucher code is required.']
+    },
 
     // Image url
-    qrCode: String,
+    qrCode: {
+        type: String,
+        required: [true, 'QR code image is required.']
+    },
 
-    startDate: Number,
+    startDate: {
+        type: Number,
+        required: [true, 'Start date is required.']
+    },
 
-    endDate: Number,
+    endDate: {
+        type: Number,
+        required: [true, 'End date is required.']
+    },
 
     isChecked: {
         type: Boolean,

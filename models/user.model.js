@@ -3,42 +3,56 @@
  */
 
 var mongoose = require('mongoose');
+var config = require('../config/app');
 
 var userSchema = new mongoose.Schema({
     name: {
         type: String,
-        default: 'VCoupon User'
-    },
-
-    gender: {
-        type: String,
-        default: 'Khác'
-    },
-
-    email: String,
-
-    phoneNumber: String,
-
-    address: String,
-
-    website: {
-        type: String,
-        default: 'www.vcoupon.vn'
-    },
-
-    fanpage: {
-        type: String,
-        default: 'www.facebook.com'
-    },
-
-    password: {
-        type: String,
-        default: 'vcoupon123'
+        default: config.user.defaultName
     },
 
     avatar: {
         type: String,
-        default: 'https://firebasestorage.googleapis.com/v0/b/vcoupon-1275f.appspot.com/o/images%2Fdefault%2Favatar_circle_grey_128dp.png?alt=media&token=e93733b2-cf52-4361-ac7f-37828416c879'
+        default: config.user.defaultAvatarURL
+    },
+
+    gender: {
+        type: String,
+        default: config.user.gender.other
+    },
+
+    email: {
+        type: String,
+        lowercase: true
+    },
+
+    phoneNumber: {
+        type: String,
+        index: true,
+        required: [true, 'Phone number is required.'],
+        unique: [true, 'This phone number is registered.']
+    },
+
+    address: {
+        type: String,
+        trim: true
+    },
+
+    website: {
+        type: String,
+        trim: true,
+        default: config.user.defaultWebsite
+    },
+
+    fanpage: {
+        type: String,
+        trim: true,
+        default: config.user.defaultFanpage
+    },
+
+    password: {
+        type: String,
+        required: [true, 'Password is required.']
     },
 
     rating: {
@@ -49,23 +63,34 @@ var userSchema = new mongoose.Schema({
     // Role type: NORMAL - Normal user, PROVIDER - Provider user
     role: {
         type: String,
-        default: 'NORMAL'
+        default: config.user.role.normal
     },
 
     subscribingTopic: [
         {
-            publisherId: String,
+            _publisherId: {
+                stype: mongoose.Schema.ObjectId,
+                ref: 'User',
+                unique: true
+            },
 
             // Subscribed Type: PROVIDER - subscribing a provider
             // CATEGORY - subscribing a category
             subscribeType: {
                 type: String,
-                default: 'PROVIDER'
+                default: config.user.role.provider
             }
         }
     ],
 
-    pinnedPromotion: [{promotionId: String}],
+    pinnedPromotion: [
+        {
+            _promotionId: {
+                type: mongoose.Schema.ObjectId,
+                ref: 'Promotion'
+            }
+        }
+    ],
 
     followingCount: {
         type: Number,

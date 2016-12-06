@@ -30,3 +30,8 @@ module.exports.disconnect = function () {
         }
     });
 };
+
+// Add sample data
+function seedDatabase() {
+
+}
