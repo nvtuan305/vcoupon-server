@@ -4,9 +4,11 @@
 
 var mongoose = require('mongoose'),
     chalk = require('chalk'),
-    tokenController = require('../controllers/token.controller');
+    tokenController = require('../controllers/token.controller'),
+    errorCtrl = require('../controllers/error.controller');
 
-var User = mongoose.model('User');
+var User = mongoose.model('User'),
+    Token = mongoose.model('Token');
 
 /**
  * Sign up new account
@@ -15,61 +17,48 @@ var User = mongoose.model('User');
  */
 module.exports.signUp = function (req, res) {
     // Check request data
-    if (req.body.phoneNumber == "" || req.body.phoneNumber == null) {
-        res.status(400).json({success: false, message: 'Opp! Please enter your phone number and try again!'});
+    if (!req.body.phoneNumber || !req.body.password) {
+        errorCtrl.sendErrorMessage(res, 400,
+            'Phone number and password is required.');
         return;
     }
 
-    User.findOne({phoneNumber: req.body.phoneNumber}, function (err, user) {
-        // Has an error when find user
-        if (err) {
-            res.status(500).json({success: false, message: 'Opp! An error has occurred. Please try again!'});
-        }
-
-        // Existing the same user in database
-        else if (user) {
-            res.status(409).json({
-                success: false, message: 'Opp! This user has already registered. ' +
-                'Please sign in or create new account!'
-            });
-        }
-
-        // Create new account
-        else {
-            if (isValidUser(req.body)) {
-                req.body.email = req.body.email.toLowerCase();
-
-                User.create(req.body, function (err, user) {
-                    if (err) {
-                        res.status(500).json({
-                            success: false,
-                            message: 'Opp! An error has occurred. Please try again!'
-                        });
-                    }
-                    else {
-                        console.log(chalk.blue('Sign up successfully!'));
-                        // console.log(user);
-
-                        var token = tokenController.getAccessToken(user._id, user.phoneNumber);
-                        res.status(200).json({
-                            success: true,
-                            message: 'Sign up successfully!',
-                            accessToken: token,
-                            user: user.toJSON()
-                        });
-                    }
-                });
+    User.findOne({phoneNumber: req.body.phoneNumber},
+        function (err, user) {
+            // Has an error when find user
+            if (err) {
+                errorCtrl.sendErrorMessage(res, 500,
+                    'An error has occurred. Please try again.');
             }
 
-            // Invalid user
+            // Existing the same user in database
+            else if (user) {
+                errorCtrl.sendErrorMessage(res, 409,
+                    'This user has already registered. Please sign in or create new account!');
+            }
+
+            // Create new account
             else {
-                res.status(400).json({
-                    success: false,
-                    message: 'Opp! Please enter all field and try again!'
-                });
+                if (isValidUser(req.body)) {
+                    User.create(req.body, function (err, user) {
+                        if (err) {
+                            errorCtrl.sendErrorMessage(res, 500,
+                                'An error has occurred. Please try again. ' + err.message);
+                        }
+                        else {
+                            var token = tokenController.getAccessToken(user._id, user.phoneNumber);
+                            responseUserInfo(res, user, token);
+                        }
+                    });
+                }
+
+                // Invalid user
+                else {
+                    errorCtrl.sendErrorMessage(res, 400,
+                        'Opp! Missing some field of user info!');
+                }
             }
-        }
-    });
+        });
 };
 
 /**
@@ -79,32 +68,45 @@ module.exports.signUp = function (req, res) {
  */
 module.exports.signIn = function (req, res) {
     // Check request data
-    if (req.body.email == "" || req.body.email == null || req.body.password == "" || req.body.password == null) {
-        res.status(401).json({success: false, message: 'Opp! Please enter your email and password to login!'});
+    if (!req.body.phoneNumber || !req.body.password) {
+        errorCtrl.sendErrorMessage(res, 400,
+            'Please enter your phone number and password to login!');
         return;
     }
 
-    req.body.email = req.body.email.toLowerCase();
+    var query = User.findOne({phoneNumber: req.body.phoneNumber});
 
-    User.findOne({email: req.body.email, password: req.body.password}, function (err, user) {
-        // Has an error when find user
-        if (err) {
-            res.status(500).json({success: false, message: 'Opp! An error has occurred. Please try again!'});
-        }
-        // Wrong email or password
-        else if (!user) {
-            res.status(401).json({success: false, message: 'Wrong email or password!'});
-        }
-        else {
-            var token = tokenController.getAccessToken(user._id, user.phoneNumber);
-            res.status(200).json({
-                success: true,
-                message: 'Sign in successfully!',
-                accessToken: token,
-                user: user.toJSON()
-            });
-        }
-    });
+    // Authenticate user
+    User.findOne({phoneNumber: req.body.phoneNumber},
+        function (err, user) {
+            // Has an error when find user
+            if (err) {
+                errorCtrl.sendErrorMessage(res, 500,
+                    'An error has occurred. Please try again! ' + err.message);
+            }
+
+            // Wrong email or password
+            else if (!user) {
+                errorCtrl.sendErrorMessage(res, 401,
+                    'Wrong phone number!');
+            }
+
+            else {
+                if (user.authenticate(req.body.password)) {
+                    var token = tokenController.getAccessToken(user._id, user.phoneNumber);
+
+                    if (token) {
+                        responseUserInfo(res, user, token);
+                    } else {
+                        errorCtrl.sendErrorMessage(res, 401,
+                            'Can not login. Please try again!');
+                    }
+                } else {
+                    errorCtrl.sendErrorMessage(res, 401,
+                        'Wrong password!');
+                }
+            }
+        });
 };
 
 /**
@@ -114,22 +116,33 @@ module.exports.signIn = function (req, res) {
  */
 function isValidUser(user) {
     // Wrong role
-    if (user.role == null || (user.role != 'NORMAL' && user.role != 'PROVIDER'))
+    if (!user.role || (user.role != 'NORMAL' && user.role != 'PROVIDER'))
         return false;
 
-    if (user.name == "" || user.name == null
-        || user.email == "" || user.email == null
-        || user.phoneNumber == "" || user.phoneNumber == null
-        || user.password == "" || user.password == null)
+    if (!user.name || !user.email || !user.phoneNumber || !user.password)
         return false;
 
     // Provider user
     if (user.role == 'PROVIDER') {
-        if (user.address == "" || user.address == null)
+        if (!user.address)
             return false;
     }
 
     return true;
+}
+
+// Save token and response user info
+function responseUserInfo(res, user, token) {
+    user.accessToken = token;
+
+    User.update({_id: user._id}, user, {new: true}, function (err) {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500,
+                'An error has occurred!');
+        } else {
+            res.status(200).json(user.toJSON());
+        }
+    });
 }
 
 /***
@@ -143,7 +156,7 @@ module.exports.getUserInfo = function (req, res) {
             res.status(404).json({success: false, message: 'User not found!'});
         }
         else {
-            res.status(200).json(user.toJSON());
+            res.status(200).json(user.toJSONPublicProfile());
         }
     });
 };

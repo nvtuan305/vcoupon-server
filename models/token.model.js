@@ -5,10 +5,14 @@
 var mongoose = require('mongoose');
 
 var tokenSchema = new mongoose.Schema({
-    userId: String,
+    _userId: String,
     accessToken: String,
     refreshToken: String,
-    expireIn: Number
+    expireIn: Number,
+    createdAt: {
+        type: Date,
+        set: Date.now
+    }
 });
 
 mongoose.model('Token', tokenSchema);
