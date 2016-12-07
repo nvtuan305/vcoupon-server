@@ -77,8 +77,8 @@ var userSchema = new mongoose.Schema({
         {
             _publisherId: {
                 type: mongoose.Schema.ObjectId,
-                ref: 'User',
-                unique: true
+                unique: true,
+                required: [true, 'Publisher id is required.']
             },
 
             // Subscribed Type: PROVIDER - subscribing a provider
