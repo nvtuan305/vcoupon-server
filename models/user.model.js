@@ -10,6 +10,7 @@ var config = require('../config/app');
 var userSchema = new mongoose.Schema({
     name: {
         type: String,
+        required: [true, 'Name is required.'],
         default: config.user.defaultName
     },
 
@@ -20,6 +21,7 @@ var userSchema = new mongoose.Schema({
 
     gender: {
         type: String,
+        enum: ['Nam', 'Nữ', 'Khác'],
         default: config.user.gender.other
     },
 
@@ -70,6 +72,7 @@ var userSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: ['NORMAL', 'PROVIDER'],
+        required: [true, 'Role is required.'],
         default: config.user.role.normal
     },
 
@@ -120,7 +123,8 @@ var userSchema = new mongoose.Schema({
 
     provider: {
         type: String,
-        enum: ['vcoupon', 'facebook', 'google']
+        enum: ['vcoupon', 'facebook', 'google'],
+        required: [true, 'Provider is required.']
     },
 
     providerId: String

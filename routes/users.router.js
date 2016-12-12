@@ -1,7 +1,10 @@
-var express = require('express'),
+'use strict';
+
+let express = require('express'),
     router = express.Router();
 
-var userController = require('../controllers/user.controller');
+let userController = require('../controllers/user.controller'),
+    authController = require('../controllers/authorization.controller');
 
 router
 // Sign up new account
@@ -20,12 +23,16 @@ router
     })
 
     // Follow an promotion provider or promotion category
-    .post('/follow-promotion/', function (req, res) {
+    .post('/follow-promotion/', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
         userController.followPromotion(req, res);
     })
 
     // Unfollow an promotion provider or promotion category
-    .post('/unfollow-promotion/', function (req, res) {
+    .post('/unfollow-promotion/', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
         userController.unfollowPromotion(req, res);
     });
 
