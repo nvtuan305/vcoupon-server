@@ -74,4 +74,10 @@ var promotionSchema = new mongoose.Schema({
 
 });
 
+// Transform promotion to JSON
+promotionSchema.methods.toJSON = function () {
+    var promotion = this.toObject();
+    return promotion;
+};
+
 mongoose.model('Promotion', promotionSchema);

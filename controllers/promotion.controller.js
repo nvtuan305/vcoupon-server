@@ -13,6 +13,30 @@ module.exports.postNewPromotion = function (req, res) {
     }
 };
 
+module.exports.addPromotion = function (req, res) {
+    // Insert some categories
+    // Promotion.create(req.body, function (err) {
+    //     if (err) {
+    //         console.error(chalk.bgRed('Init promotion failed!'));
+    //         console.log(err);
+    //     } else {
+    //         console.info(chalk.blue('Init promotion successful!'));
+    //         res.send();
+    //     }
+    // });
+};
+
+module.exports.getPromotionInfo = function (req, res) {
+    Promotion.findOne({_id: req.params._promotionId}, function (err, promotion) {
+        if (err || !promotion) {
+            res.status(404).json({success: false, message: 'Promotion not found!'});
+        }
+        else {
+            res.status(200).json(promotion.toJSON());
+        }
+    });
+};
+
 function isValidPromotion(promotion) {
     if (promotion.providerId == "" || promotion.providerId == null
         || promotion.categoryTypeID == "" || promotion.categoryTypeID == null
