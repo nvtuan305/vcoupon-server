@@ -8,17 +8,22 @@ let userController = require('../controllers/user.controller'),
 
 router
 // Sign up new account
-    .post('/sign-up', function (req, res) {
+    .post('/sign-up', (req, res) => {
         userController.signUp(req, res);
     })
 
     // Sign in account
-    .post('/sign-in', function (req, res) {
+    .post('/sign-in', (req, res) => {
         userController.signIn(req, res);
     })
 
+    // Sign in with facebook
+    .post('/sign-in-facebook', (req, res) => {
+        userController.signInWithFacebook(req, res);
+    })
+
     // Get user info
-    .get('/:userId', function (req, res) {
+    .get('/:userId', (req, res) => {
         userController.getUserInfo(req, res);
     })
 
