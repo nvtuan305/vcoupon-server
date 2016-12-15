@@ -70,8 +70,17 @@ var promotionSchema = new mongoose.Schema({
     commentCount: {
         type: Number,
         default: 0
-    }
+    },
 
+    createAt: {
+        type: Number,
+        default: 0
+    },
+
+    lastLogin: {
+        type: Number,
+        default: 0
+    }
 });
 
 // Transform promotion to JSON

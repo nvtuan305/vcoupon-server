@@ -2,51 +2,78 @@
  * Created by apismantis on 03/12/2016.
  */
 
-var mongoose = require('mongoose'),
+let mongoose = require('mongoose'),
     chalk = require('chalk');
 
-var Promotion = mongoose.model('Promotion');
+let Promotion = mongoose.model('Promotion');
+let User = mongoose.model('User');
+
 
 module.exports.postNewPromotion = function (req, res) {
     if (!isValidPromotion(req.body)) {
         res.status(400).json({success: false, message: 'Please enter the full information!'});
     }
+    else {
+        User.findOne({_id: req.body.providerId},
+            function (err, user) {
+                // Has an error when find user
+                if (err) {
+                    errorCtrl.sendErrorMessage(res, 500,
+                        'Có lỗi xảy ra! Vui lòng thử lại',
+                        errorCtrl.getErrorMessage(err));
+                }
+                else {
+                    Promotion.create(req.body, function (err) {
+                        if (err) {
+                            console.error(chalk.bgRed('Init promotion failed!'));
+                            console.log(err);
+                        } else {
+                            console.info(chalk.blue('Init promotion successful!'));
+                            user.promotionCount++;
+                            User.update({_id: req.body._userId}, {
+                                    $set: {
+                                        promotionCount: user.promotionCount
+                                    }
+                                },
+                                {runValidators: true, override: true}, function (err) {
+                                    if (err) {
+                                        errorCtrl.sendErrorMessage(res, 404,
+                                            'Có lỗi xảy ra. Vui lòng thử lại',
+                                            errorCtrl.getErrorMessage(err));
+                                    } else {
+                                        res.status(200).json({success: true, resultMessage: 'Post promotion thành công!'});
+                                        res.send();
+                                    }
+                                });
+                        }
+                    });
+                }
+            });
+    }
 };
 
-module.exports.addPromotion = function (req, res) {
-    // Insert some categories
-    // Promotion.create(req.body, function (err) {
-    //     if (err) {
-    //         console.error(chalk.bgRed('Init promotion failed!'));
-    //         console.log(err);
-    //     } else {
-    //         console.info(chalk.blue('Init promotion successful!'));
-    //         res.send();
-    //     }
-    // });
-};
-
-module.exports.getPromotionInfo = function (req, res) {
-    Promotion.findOne({_id: req.params._promotionId}, function (err, promotion) {
-        if (err || !promotion) {
-            res.status(404).json({success: false, message: 'Promotion not found!'});
-        }
-        else {
-            res.status(200).json(promotion.toJSON());
-        }
-    });
-};
+// module.exports.getPromotionInfo = function (req, res) {
+//     Promotion.findOne({_id: req.params._promotionId}, function (err, promotion) {
+//         if (err || !promotion) {
+//             res.status(404).json({success: false, message: 'Promotion not found!'});
+//         }
+//         else {
+//             res.status(200).json(promotion.toJSON());
+//         }
+//     });
+// };
 
 function isValidPromotion(promotion) {
+    let currentDate = new Date().getTime() / 1000;
+
     if (promotion.providerId == "" || promotion.providerId == null
         || promotion.categoryTypeID == "" || promotion.categoryTypeID == null
         || promotion.title == "" || promotion.title == null
         || promotion.amountLimit <= 0 || promotion.amountLimit == null
         || promotion.discount <= 0 || promotion.discount == null
         || promotion.endDate <= 0 || promotion.endDate == null
-        || promotion.address.length == 0 || promotion.address == null)
+        || promotion.addresses == null || promotion.addresses.length == 0)
         return false;
 
-    var currentDate = new Date().getTime();
     return promotion.endDate >= currentDate;
 }

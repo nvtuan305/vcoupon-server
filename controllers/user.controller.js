@@ -1,14 +1,11 @@
-/**
- * Created by apismantis on 04/12/2016.
- */
+'use strict';
 
-var mongoose = require('mongoose'),
+let mongoose = require('mongoose'),
     chalk = require('chalk'),
-    tokenController = require('../controllers/token.controller'),
-    errorCtrl = require('../controllers/error.controller');
+    authController = require('./authorization.controller.js'),
+    errorCtrl = require('./response.controller.js');
 
-var User = mongoose.model('User'),
-    Token = mongoose.model('Token');
+let User = mongoose.model('User');
 
 /**
  * Sign up new account
@@ -19,7 +16,7 @@ module.exports.signUp = function (req, res) {
     // Check request data
     if (!req.body.phoneNumber || !req.body.password) {
         errorCtrl.sendErrorMessage(res, 400,
-            'Phone number and password is required.');
+            'Số điện thoại và mật khẩu là yêu cầu bắt buộc', []);
         return;
     }
 
@@ -28,35 +25,30 @@ module.exports.signUp = function (req, res) {
             // Has an error when find user
             if (err) {
                 errorCtrl.sendErrorMessage(res, 500,
-                    'An error has occurred. Please try again.');
+                    'Có lỗi xảy ra! Vui lòng thử lại',
+                    errorCtrl.getErrorMessage(err));
             }
 
             // Existing the same user in database
             else if (user) {
                 errorCtrl.sendErrorMessage(res, 409,
-                    'This user has already registered. Please sign in or create new account!');
+                    'Số điện thoại này đã được đăng ký. ' +
+                    'Vui lòng đăng nhập hoặc tạo tài khoản bằng số điện thoại khác', []);
             }
 
             // Create new account
             else {
-                if (isValidUser(req.body)) {
-                    User.create(req.body, function (err, user) {
-                        if (err) {
-                            errorCtrl.sendErrorMessage(res, 500,
-                                'An error has occurred. Please try again. ' + err.message);
-                        }
-                        else {
-                            var token = tokenController.getAccessToken(user._id, user.phoneNumber);
-                            responseUserInfo(res, user, token);
-                        }
-                    });
-                }
-
-                // Invalid user
-                else {
-                    errorCtrl.sendErrorMessage(res, 400,
-                        'User info is wrong. Please check it and try again!');
-                }
+                User.create(req.body, function (err, user) {
+                    if (err) {
+                        errorCtrl.sendErrorMessage(res, 400,
+                            'Đăng ký không thành công',
+                            errorCtrl.getErrorMessage(err));
+                    }
+                    else {
+                        let token = authController.getAccessToken(user._id, user.phoneNumber);
+                        responseUserInfo(res, user, token);
+                    }
+                });
             }
         });
 };
@@ -70,11 +62,9 @@ module.exports.signIn = function (req, res) {
     // Check request data
     if (!req.body.phoneNumber || !req.body.password) {
         errorCtrl.sendErrorMessage(res, 400,
-            'Please enter your phone number and password to login!');
+            'Số điện thoại và mật khẩu là yêu cầu bắt buộc', []);
         return;
     }
-
-    var query = User.findOne({phoneNumber: req.body.phoneNumber});
 
     // Authenticate user
     User.findOne({phoneNumber: req.body.phoneNumber},
@@ -82,28 +72,30 @@ module.exports.signIn = function (req, res) {
             // Has an error when find user
             if (err) {
                 errorCtrl.sendErrorMessage(res, 500,
-                    'An error has occurred. Please try again! ' + err.message);
+                    'Có lỗi xảy ra! Vui lòng thử lại',
+                    errorCtrl.getErrorMessage(err));
             }
 
             // Wrong email or password
             else if (!user) {
                 errorCtrl.sendErrorMessage(res, 401,
-                    'Wrong phone number!');
+                    'Sai số điện thoại đăng nhập', []);
             }
 
             else {
                 if (user.authenticate(req.body.password)) {
-                    var token = tokenController.getAccessToken(user._id, user.phoneNumber);
+                    let token = authController.getAccessToken(user._id, user.phoneNumber);
 
                     if (token) {
                         responseUserInfo(res, user, token);
                     } else {
-                        errorCtrl.sendErrorMessage(res, 401,
-                            'Can not login. Please try again!');
+                        errorCtrl.sendErrorMessage(res, 422,
+                            'Có lỗi xảy ra! Vui lòng thử lại',
+                            errorCtrl.getErrorMessage(err));
                     }
                 } else {
                     errorCtrl.sendErrorMessage(res, 401,
-                        'Wrong password!');
+                        'Sai mật khẩu đăng nhập', []);
                 }
             }
         });
@@ -137,10 +129,15 @@ function responseUserInfo(res, user, token) {
 
     User.update({_id: user._id}, user, {new: true}, function (err) {
         if (err) {
-            errorCtrl.sendErrorMessage(res, 500,
-                'An error has occurred!');
+            errorCtrl.sendErrorMessage(res, 422,
+                'Có lỗi xảy ra! Vui lòng thử lại',
+                errorCtrl.getErrorMessage(err));
         } else {
-            res.status(200).json(user.toJSON());
+            res.status(200).json({
+                success: true,
+                resultMessage: 'Thành công',
+                user: user.toJSON()
+            });
         }
     });
 }
@@ -150,13 +147,18 @@ function responseUserInfo(res, user, token) {
  * @param req
  * @param res
  */
-module.exports.getUserInfo = function (req, res) {
+module.exports.getUserInfo = (req, res) => {
     User.findOne({_id: req.params.userId}, function (err, user) {
         if (err || !user) {
-            res.status(404).json({success: false, message: 'User not found!'});
+            errorCtrl.sendErrorMessage(res, 404,
+                'Người dùng này không tồn tại', []);
         }
         else {
-            res.status(200).json(user.toJSONPublicProfile());
+            res.status(200).json({
+                success: true,
+                resultMessage: 'Thành công',
+                user: user.toJSONPublicProfile()
+            });
         }
     });
 };
@@ -166,46 +168,54 @@ module.exports.getUserInfo = function (req, res) {
  * @param req
  * @param res
  */
-module.exports.followPromotion = function (req, res) {
+module.exports.followPromotion = (req, res) => {
     // Check data request
     if (!req.body._userId || !req.body._publisherId || !req.body.subscribeType) {
-        errorCtrl.sendErrorMessage(res, 400, 'Missing data.');
+        errorCtrl.sendErrorMessage(res, 400, 'Thiếu thông tin. Vui lòng kiểm tra lại', []);
         return;
     }
 
-    var subscribeInfo = {
+    let subscribeInfo = {
         _publisherId: req.body._publisherId,
         subscribeType: req.body.subscribeType
     };
 
-    User.findOne({_id: req.body._userId},
-        function (err, user) {
-            if (err || !user) {
-                errorCtrl.sendErrorMessage(res, 404, 'An error has occurred. ' + err.message);
-            } else {
+    User.findOne({_id: req.body._userId}, (err, user) => {
+        if (err || !user) {
+            errorCtrl.sendErrorMessage(res, 404, 'Có lỗi xảy ra. Vui lòng thử lại', []);
+        } else {
 
-                // Check duplicate following
-                for (var i = 0; i < user.subscribingTopic.length; i++) {
-                    var provider = user.subscribingTopic[i];
-                    if (provider._publisherId == subscribeInfo._publisherId
-                        && provider.subscribeType == subscribeInfo.subscribeType) {
-                        errorCtrl.sendErrorMessage(res, 400, 'You have already followed it.');
-                        return;
-                    }
+            // Check duplicate following
+            for (let i = 0; i < user.subscribingTopic.length; i++) {
+                let provider = user.subscribingTopic[i];
+                if (provider._publisherId == subscribeInfo._publisherId
+                    && provider.subscribeType == subscribeInfo.subscribeType) {
+                    errorCtrl.sendErrorMessage(res, 400, 'Bạn đã theo dõi nhà cung cấp/ thể loại khuyến mại này.', []);
+                    return;
                 }
-
-                // Update user following promotion provider / promotion category
-                user.subscribingTopic.push(subscribeInfo);
-                User.update({_id: req.body._userId}, {$set: {subscribingTopic: user.subscribingTopic}},
-                    {runValidators: true, override: true}, function (err) {
-                        if (err) {
-                            errorCtrl.sendErrorMessage(res, 404, 'An error has occurred. ' + err.message);
-                        } else {
-                            res.status(200).json({success: true, message: 'Followed successfully!'});
-                        }
-                    });
             }
-        });
+
+            // Update user following promotion provider / promotion category
+            user.subscribingTopic.push(subscribeInfo);
+            user.followingCount++;
+
+            User.update({_id: req.body._userId}, {
+                    $set: {
+                        subscribingTopic: user.subscribingTopic,
+                        followingCount: user.followingCount
+                    }
+                },
+                {runValidators: true, override: true}, function (err) {
+                    if (err) {
+                        errorCtrl.sendErrorMessage(res, 404,
+                            'Có lỗi xảy ra. Vui lòng thử lại',
+                            errorCtrl.getErrorMessage(err));
+                    } else {
+                        res.status(200).json({success: true, resultMessage: 'Theo dõi thành công!'});
+                    }
+                });
+        }
+    });
 };
 
 /**
@@ -216,36 +226,88 @@ module.exports.followPromotion = function (req, res) {
 module.exports.unfollowPromotion = function (req, res) {
     // Check data request
     if (!req.body._userId || !req.body._publisherId) {
-        errorCtrl.sendErrorMessage(res, 400, 'Missing data.');
+        errorCtrl.sendErrorMessage(res, 404, 'Có lỗi xảy ra. Vui lòng thử lại', []);
         return;
     }
 
-    User.findOne({_id: req.body._userId},
+    User.findOne({_id: req.body._userId}, (err, user) => {
+        if (err || !user) {
+            errorCtrl.sendErrorMessage(res, 404, 'Có lỗi xảy ra. Vui lòng thử lại', []);
+        } else {
+
+            for (let i = 0; i < user.subscribingTopic.length; i++) {
+                if (user.subscribingTopic[i]._publisherId == req.body._publisherId) {
+                    user.subscribingTopic.splice(i, 1);
+
+                    user.followingCount--;
+                    if (user.followingCount < 0) user.followingCount = 0;
+
+                    // Update user following promotion provider / promotion category
+                    User.update({_id: req.body._userId}, {
+                        $set: {subscribingTopic: user.subscribingTopic, followingCount: user.followingCount}
+                    }, {runValidators: true, override: true}, function (err) {
+                        if (err) {
+                            errorCtrl.sendErrorMessage(res, 404,
+                                'Có lỗi xảy ra. Vui lòng thử lại',
+                                errorCtrl.getErrorMessage(err));
+                        } else {
+                            res.status(200).json({success: true, resultMessage: 'Bỏ theo dõi thành công!'});
+                        }
+                    });
+
+                    return;
+                }
+            }
+
+            errorCtrl.sendErrorMessage(res, 400, 'Bạn đang không theo dõi nhà cung cấp/ thể loại khuyến mại này.', []);
+        }
+    });
+};
+
+module.exports.updateProfile = (req, res) => {
+    // Check request data
+    if (!req.body.phoneNumber) {
+        errorCtrl.sendErrorMessage(res, 400,
+            'Phone number and password is required.');
+        return;
+    }
+
+    User.findOne({phoneNumber: req.body.phoneNumber},
         function (err, user) {
-            if (err || !user) {
-                errorCtrl.sendErrorMessage(res, 404, 'An error has occurred. ' + err.message);
-            } else {
+            // Has an error when find user
+            if (err) {
+                errorCtrl.sendErrorMessage(res, 500,
+                    'An error has occurred. Please try again.');
+            }
 
-                for (var i = 0; i < user.subscribingTopic.length; i++) {
-                    if (user.subscribingTopic[i]._publisherId == req.body._publisherId) {
-                        user.subscribingTopic.splice(i, 1);
+            // Existing the same user in database
+            else if (user) {
+                errorCtrl.sendErrorMessage(res, 409,
+                    'This user has already registered. Please sign in or create new account!');
+            }
 
-                        // Update user following promotion provider / promotion category
-                        User.update({_id: req.body._userId}, {$set: {subscribingTopic: user.subscribingTopic}},
-                            {runValidators: true, override: true}, function (err) {
-                                if (err) {
-                                    errorCtrl.sendErrorMessage(res, 404, 'An error has occurred. ' + err.message);
-                                } else {
-                                    res.status(200).json({success: true, message: 'Unfollowed successfully!'});
-                                }
-                            });
-
-                        return;
-                    }
+            // Create new account
+            else {
+                if (isValidUser(req.body)) {
+                    User.create(req.body, function (err, user) {
+                        if (err) {
+                            errorCtrl.sendErrorMessage(res, 500,
+                                'An error has occurred. Please try again. ' + err.message);
+                        }
+                        else {
+                            var token = authController.getAccessToken(user._id, user.phoneNumber);
+                            responseUserInfo(res, user, token);
+                        }
+                    });
                 }
 
-                errorCtrl.sendErrorMessage(res, 404, 'You have not already followed it.');
+                // Invalid user
+                else {
+                    errorCtrl.sendErrorMessage(res, 400,
+                        'User info is wrong. Please check it and try again!');
+                }
             }
         });
 };
+
 
