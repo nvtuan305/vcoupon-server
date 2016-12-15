@@ -7,6 +7,10 @@ let mongoose = require('mongoose'),
 
 let User = mongoose.model('User');
 
+// Define default response message
+let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
+    defaultSuccessMessage = 'Thực hiện thành công';
+
 /**
  * Sign up new account
  * @param req: Request body
@@ -51,6 +55,10 @@ module.exports.signUp = function (req, res) {
                 });
             }
         });
+};
+
+module.exports.signUpWithFacebook = (req, res) => {
+
 };
 
 /**
@@ -101,6 +109,34 @@ module.exports.signIn = function (req, res) {
         });
 };
 
+/***
+ * Sign in with Facebook
+ * @param req
+ * @param res
+ */
+module.exports.signInWithFacebook = (req, res) => {
+    let providerId = req.body.providerId;
+    let provider = req.body.provider;
+
+    User.findOne({provider: provider, providerId: providerId}, (err, user) => {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500, defaultErrorMessage, []);
+            return;
+        }
+
+        if (!user) {
+            errorCtrl.sendErrorMessage(res, 400, 'Người dùng chưa đăng ký', []);
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            resultMessage: defaultSuccessMessage,
+            user: user.toJSON()
+        });
+    });
+};
+
 /**
  * Check user info is valid or invalid
  * @param user: user info
@@ -135,7 +171,7 @@ function responseUserInfo(res, user, token) {
         } else {
             res.status(200).json({
                 success: true,
-                resultMessage: 'Thành công',
+                resultMessage: defaultSuccessMessage,
                 user: user.toJSON()
             });
         }
@@ -156,7 +192,7 @@ module.exports.getUserInfo = (req, res) => {
         else {
             res.status(200).json({
                 success: true,
-                resultMessage: 'Thành công',
+                resultMessage: defaultSuccessMessage,
                 user: user.toJSONPublicProfile()
             });
         }
