@@ -3,10 +3,15 @@
  */
 
 let mongoose = require('mongoose'),
-    chalk = require('chalk');
+    chalk = require('chalk'),
+    errorCtrl = require('./response.controller.js');
 
 let Promotion = mongoose.model('Promotion');
 let User = mongoose.model('User');
+
+// Define default response message
+let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
+    defaultSuccessMessage = 'Thực hiện thành công';
 
 
 module.exports.postNewPromotion = function (req, res) {
@@ -39,7 +44,7 @@ module.exports.postNewPromotion = function (req, res) {
                                 {runValidators: true, override: true}, function (err) {
                                     if (err) {
                                         errorCtrl.sendErrorMessage(res, 404,
-                                            'Có lỗi xảy ra. Vui lòng thử lại',
+                                            defaultErrorMessage,
                                             errorCtrl.getErrorMessage(err));
                                     } else {
                                         res.status(200).json({success: true, resultMessage: 'Post promotion thành công!'});
@@ -53,16 +58,21 @@ module.exports.postNewPromotion = function (req, res) {
     }
 };
 
-// module.exports.getPromotionInfo = function (req, res) {
-//     Promotion.findOne({_id: req.params._promotionId}, function (err, promotion) {
-//         if (err || !promotion) {
-//             res.status(404).json({success: false, message: 'Promotion not found!'});
-//         }
-//         else {
-//             res.status(200).json(promotion.toJSON());
-//         }
-//     });
-// };
+module.exports.getPromotionInfo = function (req, res) {
+    Promotion.findOne({_id: req.params.promotionId}, function (err, promotion) {
+        if (err || !promotion) {
+            errorCtrl.sendErrorMessage(res, 404,
+                'Promotion này không tồn tại', []);
+        }
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                promotion: promotion.toJSON()
+            });
+        }
+    });
+};
 
 function isValidPromotion(promotion) {
     let currentDate = new Date().getTime() / 1000;
