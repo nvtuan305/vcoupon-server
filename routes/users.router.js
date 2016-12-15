@@ -22,20 +22,28 @@ router
         userController.signInWithFacebook(req, res);
     })
 
+    .put('/:userId', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        userController.updateProfile(req, res);
+    })
+
     // Get user info
-    .get('/:userId', (req, res) => {
+    .get('/:userId', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
         userController.getUserInfo(req, res);
     })
 
     // Follow an promotion provider or promotion category
-    .post('/follow-promotion/', (req, res, next) => {
+    .post('/follow', (req, res, next) => {
         authController.authenticate(req, res, next);
     }, (req, res) => {
         userController.followPromotion(req, res);
     })
 
     // Unfollow an promotion provider or promotion category
-    .post('/unfollow-promotion/', (req, res, next) => {
+    .post('/unfollow', (req, res, next) => {
         authController.authenticate(req, res, next);
     }, (req, res) => {
         userController.unfollowPromotion(req, res);

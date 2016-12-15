@@ -11,7 +11,6 @@ let User = mongoose.model('User');
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công';
 
-
 // Check user info is valid or invalid
 function isValidUser(user) {
     // Wrong role
@@ -206,16 +205,19 @@ module.exports.followPromotion = (req, res) => {
         return;
     }
 
+    if (req.body._userId == req.body._publisherId) {
+        errorHandler.sendErrorMessage(res, 400, "Bạn không thể tự theo dõi mình được.", []);
+        return;
+    }
+
     let subscribeInfo = {
         _publisherId: req.body._publisherId,
         subscribeType: req.body.subscribeType
     };
-
     User.findOne({_id: req.body._userId}, (err, user) => {
         if (err || !user) {
-            errorHandler.sendErrorMessage(res, 404, 'Có lỗi xảy ra. Vui lòng thử lại', []);
+            errorHandler.sendErrorMessage(res, 404, defaultErrorMessage, []);
         } else {
-
             // Check duplicate following
             for (let i = 0; i < user.subscribingTopic.length; i++) {
                 let provider = user.subscribingTopic[i];
@@ -231,20 +233,17 @@ module.exports.followPromotion = (req, res) => {
             user.followingCount++;
 
             User.update({_id: req.body._userId}, {
-                    $set: {
-                        subscribingTopic: user.subscribingTopic,
-                        followingCount: user.followingCount
-                    }
-                },
-                {runValidators: true, override: true}, function (err) {
-                    if (err) {
-                        errorHandler.sendErrorMessage(res, 404,
-                            'Có lỗi xảy ra. Vui lòng thử lại',
-                            errorHandler.getErrorMessage(err));
-                    } else {
-                        res.status(200).json({success: true, resultMessage: 'Theo dõi thành công!'});
-                    }
-                });
+                $set: {
+                    subscribingTopic: user.subscribingTopic,
+                    followingCount: user.followingCount
+                }
+            }, {runValidators: true, override: true}, function (err) {
+                if (err) {
+                    responseSystemError(res, err);
+                } else {
+                    res.status(200).json({success: true, resultMessage: 'Theo dõi thành công!'});
+                }
+            });
         }
     });
 };
@@ -254,16 +253,21 @@ module.exports.followPromotion = (req, res) => {
  * @param req
  * @param res
  */
-module.exports.unfollowPromotion = function (req, res) {
+module.exports.unfollowPromotion = (req, res) => {
     // Check data request
     if (!req.body._userId || !req.body._publisherId) {
-        errorHandler.sendErrorMessage(res, 404, 'Có lỗi xảy ra. Vui lòng thử lại', []);
+        errorHandler.sendErrorMessage(res, 404, defaultErrorMessage, []);
+        return;
+    }
+
+    if (req.body._userId == req.body._publisherId) {
+        errorHandler.sendErrorMessage(res, 400, "Bạn không thể tự theo dõi mình được.", []);
         return;
     }
 
     User.findOne({_id: req.body._userId}, (err, user) => {
         if (err || !user) {
-            errorHandler.sendErrorMessage(res, 404, 'Có lỗi xảy ra. Vui lòng thử lại', []);
+            errorHandler.sendErrorMessage(res, 404, defaultErrorMessage, []);
         } else {
 
             for (let i = 0; i < user.subscribingTopic.length; i++) {
@@ -278,9 +282,7 @@ module.exports.unfollowPromotion = function (req, res) {
                         $set: {subscribingTopic: user.subscribingTopic, followingCount: user.followingCount}
                     }, {runValidators: true, override: true}, function (err) {
                         if (err) {
-                            errorHandler.sendErrorMessage(res, 404,
-                                'Có lỗi xảy ra. Vui lòng thử lại',
-                                errorHandler.getErrorMessage(err));
+                            responseSystemError(res, err);
                         } else {
                             res.status(200).json({success: true, resultMessage: 'Bỏ theo dõi thành công!'});
                         }
@@ -295,50 +297,42 @@ module.exports.unfollowPromotion = function (req, res) {
     });
 };
 
+/***
+ * Update profile
+ * @param req
+ * @param res
+ */
 module.exports.updateProfile = (req, res) => {
     // Check request data
-    if (!req.body.phoneNumber) {
-        errorHandler.sendErrorMessage(res, 400,
-            'Phone number and password is required.');
+    if (!req.body.phoneNumber || !req.params.userId) {
+        errorHandler.sendErrorMessage(res, 400, 'Bạn chưa điền đầy đủ thông tin', []);
         return;
     }
 
-    User.findOne({phoneNumber: req.body.phoneNumber},
-        function (err, user) {
-            // Has an error when find user
-            if (err) {
-                errorHandler.sendErrorMessage(res, 500,
-                    'An error has occurred. Please try again.');
-            }
+    // Update another user's profile
+    if (req.headers.user_id != req.params.userId) {
+        errorHandler.sendErrorMessage(res, 400, 'Bạn không thể cập nhật profile của người khác được', []);
+        return;
+    }
 
-            // Existing the same user in database
-            else if (user) {
-                errorHandler.sendErrorMessage(res, 409,
-                    'This user has already registered. Please sign in or create new account!');
-            }
+    User.findOneAndUpdate({_id: req.params.userId}, req.body, {new: true, runValidators: true}, (err, user) => {
+        // Has an error when find user
+        if (err) {
+            responseSystemError(res, err);
+            return;
+        }
 
-            // Create new account
-            else {
-                if (isValidUser(req.body)) {
-                    User.create(req.body, function (err, user) {
-                        if (err) {
-                            errorHandler.sendErrorMessage(res, 500,
-                                'An error has occurred. Please try again. ' + err.message);
-                        }
-                        else {
-                            var token = authController.getAccessToken(user._id, user.phoneNumber);
-                            responseUserInfo(res, user, token);
-                        }
-                    });
-                }
-
-                // Invalid user
-                else {
-                    errorHandler.sendErrorMessage(res, 400,
-                        'User info is wrong. Please check it and try again!');
-                }
-            }
-        });
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+        }
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                user: user.toJSON()
+            });
+        }
+    });
 };
 
 
