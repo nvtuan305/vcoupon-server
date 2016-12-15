@@ -11,6 +11,10 @@ router
     }, function (req, res, next) {
         // add promotion here
        promotionController.postNewPromotion(req, res);
+    })
+
+    .get('/:promotionId', function (req, res) {
+       promotionController.getPromotionInfo(req, res);
     });
 
 module.exports = router;

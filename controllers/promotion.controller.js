@@ -3,10 +3,15 @@
  */
 
 let mongoose = require('mongoose'),
-    chalk = require('chalk');
+    chalk = require('chalk'),
+    errorCtrl = require('./response.controller.js');
 
 let Promotion = mongoose.model('Promotion');
 let User = mongoose.model('User');
+
+// Define default response message
+let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
+    defaultSuccessMessage = 'Thực hiện thành công';
 
 
 module.exports.postNewPromotion = function (req, res) {
@@ -14,7 +19,7 @@ module.exports.postNewPromotion = function (req, res) {
         res.status(400).json({success: false, message: 'Please enter the full information!'});
     }
     else {
-        User.findOne({_id: req.body.providerId},
+        User.findOne({_id: req.body._providerId},
             function (err, user) {
                 // Has an error when find user
                 if (err) {
@@ -30,7 +35,8 @@ module.exports.postNewPromotion = function (req, res) {
                         } else {
                             console.info(chalk.blue('Init promotion successful!'));
                             user.promotionCount++;
-                            User.update({_id: req.body._userId}, {
+                            console.log(user.promotionCount);
+                            User.update({_id: req.body._providerId}, {
                                     $set: {
                                         promotionCount: user.promotionCount
                                     }
@@ -38,7 +44,7 @@ module.exports.postNewPromotion = function (req, res) {
                                 {runValidators: true, override: true}, function (err) {
                                     if (err) {
                                         errorCtrl.sendErrorMessage(res, 404,
-                                            'Có lỗi xảy ra. Vui lòng thử lại',
+                                            defaultErrorMessage,
                                             errorCtrl.getErrorMessage(err));
                                     } else {
                                         res.status(200).json({success: true, resultMessage: 'Post promotion thành công!'});
@@ -52,22 +58,27 @@ module.exports.postNewPromotion = function (req, res) {
     }
 };
 
-// module.exports.getPromotionInfo = function (req, res) {
-//     Promotion.findOne({_id: req.params._promotionId}, function (err, promotion) {
-//         if (err || !promotion) {
-//             res.status(404).json({success: false, message: 'Promotion not found!'});
-//         }
-//         else {
-//             res.status(200).json(promotion.toJSON());
-//         }
-//     });
-// };
+module.exports.getPromotionInfo = function (req, res) {
+    Promotion.findOne({_id: req.params.promotionId}, function (err, promotion) {
+        if (err || !promotion) {
+            errorCtrl.sendErrorMessage(res, 404,
+                'Promotion này không tồn tại', []);
+        }
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                promotion: promotion.toJSON()
+            });
+        }
+    });
+};
 
 function isValidPromotion(promotion) {
     let currentDate = new Date().getTime() / 1000;
 
-    if (promotion.providerId == "" || promotion.providerId == null
-        || promotion.categoryTypeID == "" || promotion.categoryTypeID == null
+    if (promotion._providerId == "" || promotion._providerId == null
+        || promotion._categoryTypeID == "" || promotion._categoryTypeID == null
         || promotion.title == "" || promotion.title == null
         || promotion.amountLimit <= 0 || promotion.amountLimit == null
         || promotion.discount <= 0 || promotion.discount == null
