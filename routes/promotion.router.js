@@ -4,10 +4,13 @@ var express = require('express'),
 var promotionController = require('../controllers/promotion.controller'),
     authController = require('../controllers/authorization.controller.js');
 
-router.post('/post-promotion', function (req, res, next) {
-    authController.authenticate(req, res, next);
-}, function (req, res, next) {
-    // add promotion here
-});
+
+router
+    .post('/post-promotion', function (req, res, next) {
+        authController.authenticate(req, res, next);
+    }, function (req, res, next) {
+        // add promotion here
+       promotionController.postNewPromotion(req, res);
+    });
 
 module.exports = router;

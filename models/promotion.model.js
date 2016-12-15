@@ -60,7 +60,21 @@ var promotionSchema = new mongoose.Schema({
         default: '%' // % or VND
     },
 
-    addresses: [String],
+    addresses: [
+        {
+            number: String,
+            street: String,
+            ward: String,
+            district: String,
+            province: String,
+            latitude: Number,
+            country: {
+                type: String,
+                default: "Việt Nam"
+            },
+            longitude: Number
+        }
+    ],
 
     pinnedCount: {
         type: Number,
@@ -70,8 +84,18 @@ var promotionSchema = new mongoose.Schema({
     commentCount: {
         type: Number,
         default: 0
-    }
+    },
 
+    createAt: {
+        type: Number,
+        default: 0
+    }
 });
+
+// Transform promotion to JSON
+promotionSchema.methods.toJSON = function () {
+    var promotion = this.toObject();
+    return promotion;
+};
 
 mongoose.model('Promotion', promotionSchema);
