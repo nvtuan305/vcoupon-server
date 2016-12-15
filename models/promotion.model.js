@@ -60,7 +60,21 @@ var promotionSchema = new mongoose.Schema({
         default: '%' // % or VND
     },
 
-    addresses: [String],
+    addresses: [
+        {
+            number: String,
+            street: String,
+            ward: String,
+            district: String,
+            province: String,
+            latitude: Number,
+            country: {
+                type: String,
+                default: "Việt Nam"
+            },
+            longitude: Number
+        }
+    ],
 
     pinnedCount: {
         type: Number,
@@ -73,11 +87,6 @@ var promotionSchema = new mongoose.Schema({
     },
 
     createAt: {
-        type: Number,
-        default: 0
-    },
-
-    lastLogin: {
         type: Number,
         default: 0
     }
