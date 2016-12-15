@@ -5,11 +5,11 @@ module.exports.getErrorMessage = (error) => {
     let errorMessages = [];
 
     if (error.errors) {
-        error.forEach((message) => {
-            errorMessages.push(message);
+        Object.keys(error.errors).forEach((errorName) => {
+            errorMessages.push(error.errors[errorName].message);
         });
     } else {
-        errorMessages.push(error.message);
+        errorMessages.push( error.message);
     }
 
     return errorMessages;

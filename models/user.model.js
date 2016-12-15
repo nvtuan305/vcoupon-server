@@ -1,13 +1,11 @@
-/**
- * Created by apismantis on 03/12/2016.
- */
+'use strict';
 
-var mongoose = require('mongoose'),
+let mongoose = require('mongoose'),
     crypto = require('crypto');
 
-var config = require('../config/app');
+let config = require('../config/app');
 
-var userSchema = new mongoose.Schema({
+let userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, 'Name is required.'],
@@ -80,7 +78,6 @@ var userSchema = new mongoose.Schema({
         {
             _publisherId: {
                 type: mongoose.Schema.ObjectId,
-                unique: true,
                 required: [true, 'Publisher id is required.']
             },
 
@@ -153,7 +150,7 @@ userSchema.methods.authenticate = function (password) {
 
 // Transform user to JSON
 userSchema.methods.toJSON = function () {
-    var user = this.toObject();
+    let user = this.toObject();
     delete user.password;
     delete  user.salt;
     return user;
@@ -161,7 +158,7 @@ userSchema.methods.toJSON = function () {
 
 // Transform user to JSON for public profile
 userSchema.methods.toJSONPublicProfile = function () {
-    var user = this.toJSON();
+    let user = this.toJSON();
     delete  user.accessToken;
     return user;
 };
