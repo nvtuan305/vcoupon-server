@@ -1,0 +1,239 @@
+{
+  "info": {
+    "name": "VCoupon",
+    "_postman_id": "9016396a-ce71-523d-9af8-75030097f551",
+    "description": "",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+  },
+  "item": [
+    {
+      "_postman_id": "4114c335-89fe-3207-6db2-2fadc185d8d7",
+      "name": "Sign up",
+      "request": {
+        "url": "http://localhost:3000/api/v1/users/sign-up",
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "description": ""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\" : \"support@uber.vn\",\r\n    \"phoneNumber\" : \"19008198\",\r\n    \"address\" : \"227 NguyÅn Vn Cë, P.4, Qu­n 5, TP.HCM\",\r\n    \"password\" : \"provider\",\r\n    \"provider\": \"vcoupon\",\r\n    \"role\" : \"PROVIDER\",\r\n    \"fanpage\" : \"www.facebook.com/uberVN/\",\r\n    \"website\" : \"www.uber.com\",\r\n    \"avatar\" : \"http://www.oxfordeagle.com/wp-content/uploads/2016/06/uber.png\",\r\n    \"name\" : \"GrabBike\"\r\n}"
+        },
+        "description": "ng ký tài kho£n mÛi"
+      }
+    },
+    {
+      "_postman_id": "f295773f-bc10-2e64-8f82-b049a0b7e06e",
+      "name": "Sign in",
+      "request": {
+        "url": "http://localhost:3000/api/v1/users/sign-in",
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded",
+            "description": ""
+          },
+          {
+            "key": "//token",
+            "value": "",
+            "description": "",
+            "disabled": "true"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "phoneNumber",
+              "value": "180080",
+              "type": "text",
+              "enabled": "true",
+              "warning": ""
+            },
+            {
+              "key": "password",
+              "value": "provider",
+              "type": "text",
+              "enabled": "true",
+              "warning": ""
+            },
+            {
+              "key": "",
+              "value": "",
+              "type": "text",
+              "enabled": "true",
+              "warning": ""
+            }
+          ]
+        },
+        "description": "ng nh­p tài kho£n"
+      }
+    },
+    {
+      "_postman_id": "c611d03e-cbcc-244b-783e-8bdea6f50c11",
+      "name": "Sign in with facebook",
+      "request": {
+        "url": "http://localhost:3000/api/v1/users/sign-in-facebook",
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded",
+            "description": ""
+          },
+          {
+            "key": "token",
+            "value": "",
+            "description": ""
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "phoneNumber",
+              "value": "112233445566",
+              "type": "text",
+              "enabled": "true",
+              "warning": ""
+            },
+            {
+              "key": "password",
+              "value": "123456",
+              "type": "text",
+              "enabled": "true",
+              "warning": ""
+            },
+            {
+              "key": "",
+              "value": "",
+              "type": "text",
+              "enabled": "true",
+              "warning": ""
+            }
+          ]
+        },
+        "description": "ng nh­p tài kho£n"
+      }
+    },
+    {
+      "_postman_id": "ddd318a3-56ce-b3bb-7f65-69bb5330034d",
+      "name": "Get user info",
+      "request": {
+        "url": "http://localhost:3000/api/v1/users/5852793ffa9a0c19ecc2646f",
+        "method": "GET",
+        "header": [
+          {
+            "key": "access_token",
+            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODUyNTZmMWIxMGFhMDE5ZDhkNjY3NDAiLCJwaG9uZU51bWJlciI6IjE4MDA4MDk5IiwiaWF0IjoxNDgxNzk4MDM0LCJleHAiOjE0OTA0MzgwMzR9.K2Iej37lysf3ddW5H6W2-O4AXOHhC6qO6VrojW-bvIg",
+            "description": ""
+          },
+          {
+            "key": "user_id",
+            "value": "585256f1b10aa019d8d66740",
+            "description": ""
+          }
+        ],
+        "body": {
+          "mode": "formdata"
+        },
+        "description": "L¥y thông tin ng°Ýi dùng"
+      }
+    },
+    {
+      "_postman_id": "5f2e6659-35ae-8dda-5fa5-c0c8d662c140",
+      "name": "Follow promotion",
+      "request": {
+        "url": "http://localhost:3000/api/v1/users/follow",
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded",
+            "description": ""
+          },
+          {
+            "key": "access_token",
+            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODUyNTZmMWIxMGFhMDE5ZDhkNjY3NDAiLCJwaG9uZU51bWJlciI6IjE4MDA4MDk5IiwiaWF0IjoxNDgxNzk4MDM0LCJleHAiOjE0OTA0MzgwMzR9.K2Iej37lysf3ddW5H6W2-O4AXOHhC6qO6VrojW-bvIg",
+            "description": ""
+          },
+          {
+            "key": "user_id",
+            "value": "585256f1b10aa019d8d66740",
+            "description": ""
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "_userId",
+              "value": "58525775b10aa019d8d66741",
+              "type": "text",
+              "enabled": "true"
+            },
+            {
+              "key": "_publisherId",
+              "value": "58525c1cb10aa019d8d66743",
+              "type": "text",
+              "enabled": "true"
+            },
+            {
+              "key": "subscribeType",
+              "value": "PROVIDER",
+              "type": "text",
+              "enabled": "true"
+            },
+            {
+              "key": "",
+              "value": "",
+              "type": "text",
+              "enabled": "true"
+            }
+          ]
+        },
+        "description": ""
+      }
+    },
+    {
+      "_postman_id": "4ebdc770-4e8f-6322-c187-f7d513a39a56",
+      "name": "Unfollow promotion",
+      "request": {
+        "url": "http://localhost:3000/api/v1/users/unfollow",
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded",
+            "description": ""
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "_userId",
+              "value": "58483e94d883304c18fc606e",
+              "type": "text",
+              "enabled": "true",
+              "warning": ""
+            },
+            {
+              "key": "_publisherId",
+              "value": "5842fbab0f0bc105b77eb74f",
+              "type": "text",
+              "enabled": "true",
+              "warning": ""
+            }
+          ]
+        },
+        "description": ""
+      }
+    }
+  ]
+}
