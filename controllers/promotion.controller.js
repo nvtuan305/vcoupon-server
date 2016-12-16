@@ -21,7 +21,7 @@ module.exports.postNewPromotion = function (req, res) {
                 // Has an error when find user
                 if (err) {
                     errorCtrl.sendErrorMessage(res, 500,
-                        'Có lỗi xảy ra! Vui lòng thử lại',
+                        defaultErrorMessage,
                         errorCtrl.getErrorMessage(err));
                 }
                 else {
@@ -73,6 +73,8 @@ module.exports.getPromotionInfo = function (req, res) {
         }
     });
 };
+
+
 
 function isValidPromotion(promotion) {
     let currentDate = new Date().getTime() / 1000;

@@ -10,6 +10,9 @@ router
     .post('/add-sample-data', function (req, res) {
         console.log('Adding sample data...');
         categoryController.addSampleData(req, res);
-    });
+    })
 
+    .get('/:categoryId/promotions', function (req, res) {
+        categoryController.getAllPromotions(req, res);
+    });
 module.exports = router;
