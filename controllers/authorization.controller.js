@@ -3,21 +3,27 @@
 let mongoose = require('mongoose'),
     jwt = require('jsonwebtoken'),
     development = require('../config/development'),
-    responseCtrl = require('./response.controller.js');
+    errorHandler = require('./response.controller.js');
 
 let User = mongoose.model('User');
 
-module.exports.getAccessToken = function (userId, phoneNumber) {
+module.exports.getAccessToken = (userId, phoneNumber) => {
     // Generate new token for this user
     return jwt.sign({userId: userId, phoneNumber: phoneNumber}, development.token.secretKey, {expiresIn: '100d'});
 };
 
-module.exports.authenticate = function (req, res, next) {
+/***
+ * Authenticate user
+ * @param req
+ * @param res
+ * @param next
+ */
+module.exports.authenticate = (req, res, next) => {
     let userId = req.headers.user_id;
     let accessToken = req.headers.access_token;
 
     if (!accessToken || !userId) {
-        responseCtrl.sendErrorMessage(res, 401,
+        errorHandler.sendErrorMessage(res, 401,
             'Không thể xác thực người dùng. Thiếu thông tin xác thực', []);
     }
 
@@ -28,25 +34,25 @@ module.exports.authenticate = function (req, res, next) {
             let decoded = jwt.verify(accessToken, development.token.secretKey);
 
             // Find token in database
-            User.findOne({_id: decoded.userId, accessToken: accessToken}, function (err, result) {
+            User.findOne({_id: decoded.userId, accessToken: accessToken}, function (err, user) {
                 if (err) {
-                    responseCtrl.sendErrorMessage(res, 401,
+                    errorHandler.sendErrorMessage(res, 401,
                         'Không thể xác thực người dùng. Vui lòng thử lại!',
-                        responseCtrl.getErrorMessage(err));
+                        errorHandler.getErrorMessage(err));
                 } else {
-                    if (result && result._id == userId) {
+                    if (user && user._id == userId) {
                         next();
                     } else {
-                        responseCtrl.sendErrorMessage(res, 401,
+                        errorHandler.sendErrorMessage(res, 401,
                             'Thông tin xác thực không chính xác', []);
                     }
                 }
             });
 
         } catch (err) {
-            responseCtrl.sendErrorMessage(res, 401,
+            errorHandler.sendErrorMessage(res, 401,
                 'Access token hết hạn hoặc không chính xác!',
-                responseCtrl.getErrorMessage(err));
+                errorHandler.getErrorMessage(err));
         }
     }
 };
