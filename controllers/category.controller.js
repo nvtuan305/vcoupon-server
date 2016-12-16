@@ -45,6 +45,7 @@ module.exports.addSampleData = function (req, res) {
     });
 };
 
+//Get all promotions in category
 module.exports.getAllPromotions = (req, res) => {
     Promotion.find({_categoryTypeID: req.params.categoryId}, function(err, promotions) {
         if (err || !promotions) {
@@ -52,6 +53,10 @@ module.exports.getAllPromotions = (req, res) => {
                 'Không có Promotion nào', []);
         }
         else {
+            //Arrange list promotions in createAt order
+            promotions.sort(function (a, b) {
+                return (a.createAt < b.createAt) ? -1 : 1;
+            });
             res.status(200).json({
                 success: true,
                 resultMessage: defaultSuccessMessage,
