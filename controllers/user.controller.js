@@ -3,13 +3,14 @@
 let mongoose = require('mongoose'),
     chalk = require('chalk'),
     authController = require('./authorization.controller.js'),
-    errorHandler = require('./response.controller.js');
+    errorHandler = require('./error.controller.js');
 
-let User = mongoose.model('User');
+let User = mongoose.model('User'),
+    Promotion = mongoose.model('Promotion');
 
-// Define default response message
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
-    defaultSuccessMessage = 'Thực hiện thành công';
+    defaultSuccessMessage = 'Thực hiện thành công',
+    defaultPageSize = 15;
 
 // Check user info is valid or invalid
 function isValidUser(user) {
@@ -47,11 +48,13 @@ function responseUserInfo(res, user, token) {
     });
 }
 
-// Response system error to client
-function responseSystemError(res, err) {
-    errorHandler.sendErrorMessage(res, 500,
-        defaultErrorMessage,
-        errorHandler.getErrorMessage(err));
+// Check promotion is pinned or not
+function isPinned(promotionId, pinnedPromotion) {
+    for (let i = 0; i < pinnedPromotion.length; i++) {
+        if (pinnedPromotion[i]._id == promotionId)
+            return true;
+    }
+    return false;
 }
 
 /**
@@ -70,7 +73,7 @@ module.exports.signUp = (req, res) => {
     User.findOne({phoneNumber: req.body.phoneNumber}, (err, user) => {
         // Has an error when find user
         if (err) {
-            responseSystemError(res, err);
+            errorHandler.sendSystemError(res, err);
         }
 
         // Existing the same user in database
@@ -84,7 +87,7 @@ module.exports.signUp = (req, res) => {
         else {
             User.create(req.body, function (err, user) {
                 if (err || !user) {
-                    responseSystemError(res, err);
+                    errorHandler.sendSystemError(res, err);
                 }
                 else {
                     let token = authController.getAccessToken(user._id, user.phoneNumber);
@@ -112,7 +115,7 @@ module.exports.signIn = (req, res) => {
         function (err, user) {
             // Has an error when find user
             if (err) {
-                responseSystemError(res, err);
+                errorHandler.sendSystemError(res, err);
                 return;
             }
 
@@ -128,7 +131,7 @@ module.exports.signIn = (req, res) => {
                     if (token) {
                         responseUserInfo(res, user, token);
                     } else {
-                        responseSystemError(res, err);
+                        errorHandler.sendSystemError(res, err);
                     }
                 } else {
                     errorHandler.sendErrorMessage(res, 401,
@@ -154,7 +157,7 @@ module.exports.signInWithFacebook = (req, res) => {
 
     User.findOne({provider: provider, providerId: providerId}, (err, user) => {
         if (err) {
-            responseSystemError(res, err);
+            errorHandler.sendSystemError(res, err);
             return;
         }
 
@@ -167,7 +170,7 @@ module.exports.signInWithFacebook = (req, res) => {
         if (token) {
             responseUserInfo(res, user, token);
         } else {
-            responseSystemError(res, err);
+            errorHandler.sendSystemError(res, err);
         }
     });
 };
@@ -198,14 +201,14 @@ module.exports.getUserInfo = (req, res) => {
  * @param req
  * @param res
  */
-module.exports.followPromotion = (req, res) => {
+module.exports.followPromotionProvider = (req, res) => {
     // Check data request
-    if (!req.body._userId || !req.body._publisherId || !req.body.subscribeType) {
+    if (!req.params.userId || !req.body._publisherId || !req.body.subscribeType) {
         errorHandler.sendErrorMessage(res, 400, 'Thiếu thông tin. Vui lòng kiểm tra lại', []);
         return;
     }
 
-    if (req.body._userId == req.body._publisherId) {
+    if (req.params.userId == req.body._publisherId) {
         errorHandler.sendErrorMessage(res, 400, "Bạn không thể tự theo dõi mình được.", []);
         return;
     }
@@ -214,7 +217,8 @@ module.exports.followPromotion = (req, res) => {
         _publisherId: req.body._publisherId,
         subscribeType: req.body.subscribeType
     };
-    User.findOne({_id: req.body._userId}, (err, user) => {
+
+    User.findOne({_id: req.params.userId}, (err, user) => {
         if (err || !user) {
             errorHandler.sendErrorMessage(res, 404, defaultErrorMessage, []);
         } else {
@@ -231,15 +235,9 @@ module.exports.followPromotion = (req, res) => {
             // Update user following promotion provider / promotion category
             user.subscribingTopic.push(subscribeInfo);
             user.followingCount++;
-
-            User.update({_id: req.body._userId}, {
-                $set: {
-                    subscribingTopic: user.subscribingTopic,
-                    followingCount: user.followingCount
-                }
-            }, {runValidators: true, override: true}, function (err) {
+            user.save((err) => {
                 if (err) {
-                    responseSystemError(res, err);
+                    errorHandler.sendSystemError(res, err);
                 } else {
                     res.status(200).json({success: true, resultMessage: 'Theo dõi thành công!'});
                 }
@@ -253,19 +251,19 @@ module.exports.followPromotion = (req, res) => {
  * @param req
  * @param res
  */
-module.exports.unfollowPromotion = (req, res) => {
+module.exports.unfollowPromotionProvider = (req, res) => {
     // Check data request
-    if (!req.body._userId || !req.body._publisherId) {
-        errorHandler.sendErrorMessage(res, 404, defaultErrorMessage, []);
+    if (!req.params.userId || !req.body._publisherId) {
+        errorHandler.sendErrorMessage(res, 404, 'Thiếu thông tin. Vui lòng kiểm tra lại', []);
         return;
     }
 
-    if (req.body._userId == req.body._publisherId) {
+    if (req.params.userId == req.body._publisherId) {
         errorHandler.sendErrorMessage(res, 400, "Bạn không thể tự theo dõi mình được.", []);
         return;
     }
 
-    User.findOne({_id: req.body._userId}, (err, user) => {
+    User.findOne({_id: req.params.userId}, (err, user) => {
         if (err || !user) {
             errorHandler.sendErrorMessage(res, 404, defaultErrorMessage, []);
         } else {
@@ -278,16 +276,13 @@ module.exports.unfollowPromotion = (req, res) => {
                     if (user.followingCount < 0) user.followingCount = 0;
 
                     // Update user following promotion provider / promotion category
-                    User.update({_id: req.body._userId}, {
-                        $set: {subscribingTopic: user.subscribingTopic, followingCount: user.followingCount}
-                    }, {runValidators: true, override: true}, function (err) {
+                    user.save((err) => {
                         if (err) {
-                            responseSystemError(res, err);
+                            errorHandler.sendSystemError(res, err);
                         } else {
                             res.status(200).json({success: true, resultMessage: 'Bỏ theo dõi thành công!'});
                         }
                     });
-
                     return;
                 }
             }
@@ -318,7 +313,7 @@ module.exports.updateProfile = (req, res) => {
     User.findOneAndUpdate({_id: req.params.userId}, req.body, {new: true, runValidators: true}, (err, user) => {
         // Has an error when find user
         if (err) {
-            responseSystemError(res, err);
+            errorHandler.sendSystemError(res, err);
             return;
         }
 
@@ -335,4 +330,127 @@ module.exports.updateProfile = (req, res) => {
     });
 };
 
+/***
+ * Pin a promotion
+ * @param req
+ * @param res
+ */
+module.exports.pinPromotion = (req, res) => {
+    let userId = req.params.userId,
+        promotionId = req.body._promotionId;
 
+    if (!promotionId) {
+        errorHandler.sendErrorMessage(res, 400, 'Thiếu ID chương trình khuyến mại', []);
+        return;
+    }
+
+    User.findOne({_id: userId}, (err, user) => {
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
+
+        // User not found
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+            return;
+        }
+
+        // Check pin promotion duplicate
+        if (isPinned(promotionId, user.pinnedPromotion)) {
+            errorHandler.sendErrorMessage(res, 400, 'Bạn đã ghim khuyến mãi này rồi', []);
+            return;
+        }
+
+        // Pin promotion
+        user.pinnedPromotion.push(promotionId);
+        user.save((err) => {
+            if (err) {
+                errorHandler.sendSystemError(res, err);
+            } else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: 'Ghim khuyến mãi thành công'
+                });
+            }
+        });
+    });
+};
+
+/***
+ * Unpin a promotion
+ * @param req
+ * @param res
+ */
+module.exports.unpinPromotion = (req, res) => {
+    let userId = req.params.userId,
+        promotionId = req.body._promotionId;
+
+    if (!promotionId) {
+        errorHandler.sendErrorMessage(res, 400, 'Thiếu ID chương trình khuyến mại', []);
+        return;
+    }
+
+    User.findOne({_id: userId}, (err, user) => {
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
+
+        // User not found
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+            return;
+        }
+
+        // Check unpin promotion not exist
+        if (!isPinned(promotionId, user.pinnedPromotion)) {
+            errorHandler.sendErrorMessage(res, 400, 'Bạn đang không ghim khuyến mãi này', []);
+            return;
+        }
+
+        // Unpin promotion
+        for (let i = 0; i < user.pinnedPromotion.length; i++) {
+            if (user.pinnedPromotion[i]._id == promotionId) {
+                user.pinnedPromotion.splice(i, 1);
+                break;
+            }
+        }
+
+        user.save((err) => {
+            if (err) {
+                errorHandler.sendSystemError(res, err);
+            } else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: 'Bỏ ghim khuyến mãi thành công'
+                });
+            }
+        });
+    });
+};
+
+module.exports.getPinnedPromotion = (req, res) => {
+    let userId = req.params.userId;
+    let page = req.params.page;
+
+    User.findOne({_id: userId}, (err, user) => {
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
+
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+            return;
+        }
+
+        // Get promotion
+        let pinnedPromotions = [];
+        for (let i = 0; i < user.pinnedPromotion.length; i++) {
+            Promotion.findOne({_id: user.pinnedPromotion[i]._promotionId}, (err, promotion) => {
+                pinnedPromotions.push(promotion);
+            });
+        }
+    });
+};

@@ -2,13 +2,20 @@
  * Created by apismantis on 03/12/2016.
  */
 
-var mongoose = require('mongoose'),
-    chalk = require('chalk');
+let mongoose = require('mongoose'),
+    chalk = require('chalk'),
+    errorCtrl = require('./error.controller');
 
-var Category = mongoose.model('Category');
+
+let Category = mongoose.model('Category');
+let Promotion = mongoose.model('Promotion');
+
+// Define default response message
+let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
+    defaultSuccessMessage = 'Thực hiện thành công';
 
 module.exports.addSampleData = function (req, res) {
-    var categories = [
+    let categories = [
         {
             name: 'Đồ ăn',
             cover: 'https://firebasestorage.googleapis.com/v0/b/vcoupon-1275f.appspot.com/o/images%2Fdefault%2Fcover_category_food-min.jpg?alt=media&token=d01e01e0-c04d-404a-afe3-ea4e270b9e6d',
@@ -36,4 +43,25 @@ module.exports.addSampleData = function (req, res) {
             res.send();
         }
     });
+};
+
+//Get all promotions in category
+module.exports.getAllPromotions = (req, res) => {
+    Promotion.find({_categoryTypeID: req.params.categoryId}, function(err, promotions) {
+        if (err || !promotions) {
+            errorCtrl.sendErrorMessage(res, 404,
+                'Không có Promotion nào', []);
+        }
+        else {
+            //Arrange list promotions in createAt order
+            promotions.sort(function (a, b) {
+                return (a.createAt < b.createAt) ? -1 : 1;
+            });
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                promotion: promotions
+            });
+        }
+    })
 };

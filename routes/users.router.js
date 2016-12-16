@@ -8,20 +8,11 @@ let userController = require('../controllers/user.controller'),
 
 router
 // Sign up new account
-    .post('/sign-up', (req, res) => {
+    .post('/', (req, res) => {
         userController.signUp(req, res);
     })
 
-    // Sign in account
-    .post('/sign-in', (req, res) => {
-        userController.signIn(req, res);
-    })
-
-    // Sign in with facebook
-    .post('/sign-in-facebook', (req, res) => {
-        userController.signInWithFacebook(req, res);
-    })
-
+    // Update profile
     .put('/:userId', (req, res, next) => {
         authController.authenticate(req, res, next);
     }, (req, res) => {
@@ -35,18 +26,49 @@ router
         userController.getUserInfo(req, res);
     })
 
+    // Sign in account
+    .post('/sign-in', (req, res) => {
+        userController.signIn(req, res);
+    })
+
+    // Sign in with facebook
+    .post('/sign-in-facebook', (req, res) => {
+        userController.signInWithFacebook(req, res);
+    })
+
     // Follow an promotion provider or promotion category
-    .post('/follow', (req, res, next) => {
+    .post('/:userId/subscribing-topic', (req, res, next) => {
         authController.authenticate(req, res, next);
     }, (req, res) => {
-        userController.followPromotion(req, res);
+        userController.followPromotionProvider(req, res);
     })
 
     // Unfollow an promotion provider or promotion category
-    .post('/unfollow', (req, res, next) => {
+    .delete('/:userId/subscribing-topic', (req, res, next) => {
         authController.authenticate(req, res, next);
     }, (req, res) => {
-        userController.unfollowPromotion(req, res);
+        userController.unfollowPromotionProvider(req, res);
+    })
+
+    // Get pinned promotion
+    .get('/:userId/pinned-promotion', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        userController.getPinnedPromotion(req, res);
+    })
+
+    // Pin promotion
+    .post('/:userId/pinned-promotion', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        userController.pinPromotion(req, res);
+    })
+
+    // Unpin promotion
+    .delete('/:userId/pinned-promotion', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        userController.unpinPromotion(req, res);
     });
 
 module.exports = router;
