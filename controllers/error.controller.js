@@ -1,5 +1,7 @@
 'use strict';
 
+let errorHanlder = require('./error.controller');
+
 // Get error message from error object
 module.exports.getErrorMessage = (error) => {
 
@@ -10,7 +12,7 @@ module.exports.getErrorMessage = (error) => {
             errorMessages.push(error.errors[errorName].message);
         });
     } else {
-        errorMessages.push( error.message);
+        errorMessages.push(error.message);
     }
 
     return errorMessages;
@@ -29,4 +31,15 @@ module.exports.sendErrorMessage = (res, statusCode, resultMessage, errors) => {
         resultMessage: resultMessage,
         errorMessage: errors
     });
+};
+
+/***
+ * Response system error when execute request
+ * @param res
+ * @param err
+ */
+module.exports.sendSystemError = (res, err) => {
+    errorHanlder.sendErrorMessage(res, 500,
+        'Có lỗi xảy ra. Vui lòng thử lại!',
+        errorHanlder.getErrorMessage(err));
 };
