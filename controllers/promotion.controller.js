@@ -4,7 +4,7 @@
 
 let mongoose = require('mongoose'),
     chalk = require('chalk'),
-    errorCtrl = require('./response.controller.js');
+    errorCtrl = require('./error.controller.js');
 
 let Promotion = mongoose.model('Promotion');
 let User = mongoose.model('User');

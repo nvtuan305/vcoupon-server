@@ -3,7 +3,7 @@
 // Get error message from error object
 module.exports.getErrorMessage = (error) => {
 
-    var errorMessages = [];
+    let errorMessages = [];
 
     if (error.errors) {
         Object.keys(error.errors).forEach((errorName) => {

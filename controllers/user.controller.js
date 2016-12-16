@@ -3,7 +3,7 @@
 let mongoose = require('mongoose'),
     chalk = require('chalk'),
     authController = require('./authorization.controller.js'),
-    errorHandler = require('./response.controller.js');
+    errorHandler = require('./error.controller.js');
 
 let User = mongoose.model('User');
 
