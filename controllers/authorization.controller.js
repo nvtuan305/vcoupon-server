@@ -3,7 +3,7 @@
 let mongoose = require('mongoose'),
     jwt = require('jsonwebtoken'),
     development = require('../config/development'),
-    errorHandler = require('./response.controller.js');
+    errorHandler = require('./error.controller.js');
 
 let User = mongoose.model('User');
 

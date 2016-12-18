@@ -1,10 +1,8 @@
-/**
- * Created by apismantis on 03/12/2016.
- */
+"use strict";
 
 let mongoose = require('mongoose'),
     chalk = require('chalk'),
-    errorCtrl = require('./response.controller.js');
+    errorCtrl = require('./error.controller.js');
 
 let Promotion = mongoose.model('Promotion');
 let User = mongoose.model('User');
@@ -12,7 +10,6 @@ let User = mongoose.model('User');
 // Define default response message
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công';
-
 
 module.exports.postNewPromotion = function (req, res) {
     if (!isValidPromotion(req.body)) {
@@ -47,7 +44,10 @@ module.exports.postNewPromotion = function (req, res) {
                                             defaultErrorMessage,
                                             errorCtrl.getErrorMessage(err));
                                     } else {
-                                        res.status(200).json({success: true, resultMessage: 'Post promotion thành công!'});
+                                        res.status(200).json({
+                                            success: true,
+                                            resultMessage: 'Post promotion thành công!'
+                                        });
                                         res.send();
                                     }
                                 });
