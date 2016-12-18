@@ -8,12 +8,12 @@ var mongoose = require('mongoose'),
 var ObjectId = mongoose.Schema.ObjectId;
 
 var promotionSchema = new mongoose.Schema({
-    _providerId: {
+    _provider: {
         type: ObjectId,
         ref: 'User'
     },
 
-    _categoryTypeID: {
+    _category: {
         type: ObjectId,
         ref: 'Category'
     },
@@ -86,9 +86,9 @@ var promotionSchema = new mongoose.Schema({
         default: 0
     },
 
-    createAt: {
+    createdAt: {
         type: Number,
-        default: 0
+        default: getCurrentDate()
     }
 });
 
@@ -97,5 +97,14 @@ promotionSchema.methods.toJSON = function () {
     var promotion = this.toObject();
     return promotion;
 };
+
+promotionSchema.pre('save', function (next) {
+    this.createdAt = getCurrentDate();
+    next();
+});
+
+function getCurrentDate() {
+    return parseInt(new Date().getTime() / 1000);
+}
 
 mongoose.model('Promotion', promotionSchema);

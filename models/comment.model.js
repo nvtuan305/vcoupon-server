@@ -6,13 +6,13 @@ var mongoose = require('mongoose');
 var ObjectId = mongoose.Schema.ObjectId;
 
 var commentSchema = new mongoose.Schema({
-    _userId: {
+    _user: {
         type: ObjectId,
         ref: 'User',
         required: [true, 'User id is required.']
     },
 
-    _promotionId: {
+    _promotion: {
         type: ObjectId,
         ref: 'Promotion',
         required: [true, 'Promotion id is required.']

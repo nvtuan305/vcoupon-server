@@ -16,7 +16,7 @@ module.exports.postNewPromotion = function (req, res) {
         res.status(400).json({success: false, message: 'Please enter the full information!'});
     }
     else {
-        User.findOne({_id: req.body._providerId},
+        User.findOne({_id: req.body._provider},
             function (err, user) {
                 // Has an error when find user
                 if (err) {
@@ -32,8 +32,7 @@ module.exports.postNewPromotion = function (req, res) {
                         } else {
                             console.info(chalk.blue('Init promotion successful!'));
                             user.promotionCount++;
-                            console.log(user.promotionCount);
-                            User.update({_id: req.body._providerId}, {
+                            User.update({_id: req.body._provider}, {
                                     $set: {
                                         promotionCount: user.promotionCount
                                     }
@@ -79,8 +78,8 @@ module.exports.getPromotionInfo = function (req, res) {
 function isValidPromotion(promotion) {
     let currentDate = new Date().getTime() / 1000;
 
-    if (promotion._providerId == "" || promotion._providerId == null
-        || promotion._categoryTypeID == "" || promotion._categoryTypeID == null
+    if (promotion._provider == "" || promotion._provider == null
+        || promotion._category == "" || promotion._category == null
         || promotion.title == "" || promotion.title == null
         || promotion.amountLimit <= 0 || promotion.amountLimit == null
         || promotion.discount <= 0 || promotion.discount == null
