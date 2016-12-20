@@ -8,19 +8,22 @@ var promotionController = require('../controllers/promotion.controller'),
 router
     .post('/', function (req, res, next) {
         authController.authenticate(req, res, next);
-    }, function (req, res, next) {
-        // add promotion here
+    }, (req, res) => {
        promotionController.postNewPromotion(req, res);
     })
 
-    .get('/:promotionId', function (req, res) {
+    .get('/:promotionId', (req, res) => {
        promotionController.getPromotionInfo(req, res);
     })
 
-    .post('/:promotionId/comments', function (req, res, next) {
+    .post('/:promotionId/comments', (req, res, next) => {
        authController.authenticate(req, res, next);
-    }, function (req, res) {
+    }, (req, res) => {
         promotionController.postNewComment(req, res);
+    })
+
+    .get('/:promotionId/comments', (req, res) => {
+        promotionController.getAllComments(req, res);
     });
 
 module.exports = router;

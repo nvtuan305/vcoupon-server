@@ -6,10 +6,12 @@ let mongoose = require('mongoose'),
 
 let Promotion = mongoose.model('Promotion');
 let User = mongoose.model('User');
+let Comment = mongoose.model('Comment');
 
 // Define default response message
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
-    defaultSuccessMessage = 'Thực hiện thành công';
+    defaultSuccessMessage = 'Thực hiện thành công',
+    commentLimit = 15;
 
 module.exports.postNewPromotion = function (req, res) {
     if (!isValidPromotion(req.body)) {
@@ -74,11 +76,11 @@ module.exports.getPromotionInfo = function (req, res) {
 };
 
 module.exports.postNewComment = (req, res) => {
-    if (!isValidPromotion(req.body)) {
+    if (!isValidComment(req.body)) {
         res.status(400).json({success: false, message: 'Please enter the full information!'});
     }
     else {
-        Promotion.findOne({_id: req.params._promotionId}, function (err, promotion) {
+        Promotion.findOne({_id: req.params.promotionId}, function (err, promotion) {
             // Has an error when find promotion
             if (err) {
                 errorCtrl.sendErrorMessage(res, 500,
@@ -93,26 +95,20 @@ module.exports.postNewComment = (req, res) => {
                     } else {
                         console.info(chalk.blue('Init comment successful!'));
                         promotion.commentCount++;
-                        Promotion.update({_id: req.body._promotion}, {
-                                $set: {
-                                    commentCount: promotion.commentCount
-                                }
-                            },
-                            {runValidators: true, override: true}, function (err) {
-                                if (err) {
-                                    errorCtrl.sendErrorMessage(res, 404,
-                                        defaultErrorMessage,
-                                        errorCtrl.getErrorMessage(err));
-                                } else {
-                                    res.status(200).json({
-                                        success: true,
-                                        resultMessage: 'Post comment thành công!'
-                                    });
-                                    res.send();
-                                }
-                            });
+                        promotion.save(function (err) {
+                            if (err) {
+                                errorCtrl.sendErrorMessage(res, 404,
+                                    defaultErrorMessage,
+                                    errorCtrl.getErrorMessage(err));
+                            } else {
+                                res.status(200).json({
+                                    success: true,
+                                    resultMessage: defaultSuccessMessage,
+                                });
+                            }
+                        });
                     }
-                })
+                });
             }
         })
     }
@@ -127,7 +123,35 @@ function isValidComment(comment) {
     return true;
 }
 
+module.exports.getAllComments = (req, res) => {
+    Promotion.findOne({_id: req.params.promotionId}, function (err, promotion) {
+        if (err || !promotion) {
+            errorCtrl.sendErrorMessage(res, 404,
+                'Khuyến mãi này không tồn tại', []);
+        }
+        else {
+            Comment.find({_promotion: req.params.promotionId}).skip((req.query.page - 1) * commentLimit).limit(commentLimit)
+                .populate('_user', ' avatar name').exec(function (err, comments) {
+                if (err || !comments) {
+                    errorCtrl.sendErrorMessage(res, 404,
+                        'Không có bình luận nào', []);
+                }
+                else {
+                    //Arrange list promotion in createdAt order
+                    comments.sort(function (a, b) {
+                        return (a.createdAt < b.createdAt) ? -1 : 1;
+                    });
+                    res.status(200).json({
+                        success: true,
+                        resultMessage: defaultSuccessMessage,
+                        comments: comments
+                    });
+                }
+            });
+        }
+    });
 
+};
 
 function isValidPromotion(promotion) {
     if (promotion._provider == "" || promotion._provider == null
