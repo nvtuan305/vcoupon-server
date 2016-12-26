@@ -7,7 +7,7 @@
 module.exports = {
     // Database development
     db: {
-        uri: 'mongodb://admin:admin.vcoupon@ds045714.mlab.com:45714/vcoupon',
+        uri: 'mongodb://admin:admin.vcoupon@ds145138.mlab.com:45138/vcoupon',
         account: {
             user: 'admin',
             password: 'admin.vcoupon'
