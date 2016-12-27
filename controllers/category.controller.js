@@ -47,7 +47,9 @@ module.exports.addSampleData = function (req, res) {
 
 //Get all promotions in category
 module.exports.getAllPromotions = (req, res) => {
-    Promotion.find({_categoryTypeID: req.params.categoryId}, function(err, promotions) {
+    let limit = 10;
+    Promotion.find({_category: req.params.categoryId}).skip((req.query.page - 1) * limit).limit(limit)
+        .populate('_provider', 'name avatar email phoneNumber address website fanpage rating').exec(function(err, promotions) {
         if (err || !promotions) {
             errorCtrl.sendErrorMessage(res, 404,
                 'Không có Promotion nào', []);
@@ -64,4 +66,21 @@ module.exports.getAllPromotions = (req, res) => {
             });
         }
     })
+};
+
+module.exports.getAllCategories = (req, res) => {
+    Category.find({}, (err, categories) => {
+        if (err)
+            errorHandler.sendSystemError(res, err);
+        // Category not found
+        else if (!categories)
+            errorHandler.sendErrorMessage(res, 404, 'Không có thể loại nào', []);
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                categories: categories
+            });
+        }
+    });
 };
