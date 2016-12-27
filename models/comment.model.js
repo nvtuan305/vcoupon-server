@@ -20,7 +20,7 @@ var commentSchema = new mongoose.Schema({
 
     commentedAt: {
         type: Number,
-        default: 0
+        default: getCurrentDate()
     },
 
     message: {
@@ -28,5 +28,14 @@ var commentSchema = new mongoose.Schema({
         required: [true, 'Message have not body']
     }
 });
+
+commentSchema.pre('save', function (next) {
+    this.commentedAt = getCurrentDate();
+    next();
+});
+
+function getCurrentDate() {
+    return parseInt(new Date().getTime() / 1000);
+}
 
 mongoose.model('Comment', commentSchema);

@@ -67,3 +67,20 @@ module.exports.getAllPromotions = (req, res) => {
         }
     })
 };
+
+module.exports.getAllCategories = (req, res) => {
+    Category.find({}, (err, categories) => {
+        if (err)
+            errorHandler.sendSystemError(res, err);
+        // Category not found
+        else if (!categories)
+            errorHandler.sendErrorMessage(res, 404, 'Không có thể loại nào', []);
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                categories: categories
+            });
+        }
+    });
+};
