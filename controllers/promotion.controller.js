@@ -4,9 +4,10 @@ let mongoose = require('mongoose'),
     chalk = require('chalk'),
     errorCtrl = require('./error.controller.js');
 
-let Promotion = mongoose.model('Promotion');
-let User = mongoose.model('User');
-let Comment = mongoose.model('Comment');
+let Promotion = mongoose.model('Promotion'),
+    User = mongoose.model('User'),
+    Comment = mongoose.model('Comment'),
+    Voucher = mongoose.model('Voucher');
 
 // Define default response message
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
@@ -88,7 +89,11 @@ module.exports.postNewComment = (req, res) => {
                     errorCtrl.getErrorMessage(err));
             }
             else {
-                Comment.create({_promotion: req.params.promotionId, _user: req.body._user, message: req.body.message}, function (err) {
+                Comment.create({
+                    _promotion: req.params.promotionId,
+                    _user: req.body._user,
+                    message: req.body.message
+                }, function (err) {
                     if (err) {
                         console.error(chalk.bgRed('Init comment failed!'));
                         console.log(err);
@@ -149,7 +154,72 @@ module.exports.getAllComments = (req, res) => {
             });
         }
     });
+};
 
+module.exports.createVoucher = (req, res) => {
+    Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
+        }
+        else if (!promotion) {
+            errorCtrl.sendErrorMessage(res, 404,
+                'Chương trình khuyến mãi này không tồn tại', []);
+        }
+        else if (parseInt(new Date().getTime() / 1000) > prmotion.endDate) {
+            errorCtrl.sendErrorMessage(res, 410,
+                'Chương trình khuyến mãi này đã hết hạn', []);
+        }
+        else if (promotion.amountRegistered >= promotion.amountLimit) {
+            errorCtrl.sendErrorMessage(res, 416,
+                'Đã hết số lượng mã', []);
+        }
+        else {
+            Voucher.create({}, (err) => {
+               if (err)
+                   errorCtrl.sendErrorMessage(res, 500,
+                       defaultErrorMessage,
+                       errorCtrl.getErrorMessage(err));
+               else {
+                   promotion.amountRegistered++;
+                   promotion.save(function (err) {
+                       if (err) {
+                           errorCtrl.sendErrorMessage(res, 500,
+                               defaultErrorMessage,
+                               errorCtrl.getErrorMessage(err));
+                       } else {
+                           res.status(200).json({
+                               success: true,
+                               resultMessage: defaultSuccessMessage,
+                           });
+                       }
+                   });
+               }
+            });
+        }
+    })
+};
+
+module.exports.getVouchers = (req, res) => {
+    Voucher.find({_promotionId: req.params.promotionId}, (err, vouchers) => {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
+        }
+        else if (!vouchers) {
+            errorCtrl.sendErrorMessage(res, 404,
+                'Chưa có voucher nào', []);
+        }
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                vouchers: vouchers
+            });
+        }
+    })
 };
 
 function isValidPromotion(promotion) {

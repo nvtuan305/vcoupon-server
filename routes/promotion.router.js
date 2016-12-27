@@ -25,5 +25,11 @@ router
     .get('/:promotionId/comments', (req, res) => {
         promotionController.getAllComments(req, res);
     });
+    //
+    // .post('/:promotionId/create-voucher', (req, res, next) => {
+    //     authController.authenticate(req, res, next);
+    // }, (req, res) => {
+    //     promotionController.createVoucher(req, res);
+    // });
 
 module.exports = router;
