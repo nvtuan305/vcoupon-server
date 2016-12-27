@@ -30,6 +30,27 @@ function isValidUser(user) {
     return true;
 }
 
+/**
+ * Remove sensitive info of user. User can't update that
+ * @param user
+ */
+function removeUserSensitiveInformation(user) {
+    user.accessToken = undefined;
+    user.salt = undefined;
+    //user.role = undefined;
+    user.subscribingTopic = undefined;
+    user.pinnedPromotion = undefined;
+    //user.provider = undefined;
+    user.providerId = undefined;
+
+    delete user.promotionCount;
+    delete user.followingCount;
+    delete user.followedCount;
+    delete user.rating;
+
+    return user;
+}
+
 // Save token and response user info
 function responseUserInfo(res, user, token) {
     user.accessToken = token;
@@ -85,6 +106,7 @@ module.exports.signUp = (req, res) => {
 
         // Create new account
         else {
+            //let userInfo = removeUserSensitiveInformation(req.body);
             User.create(req.body, function (err, user) {
                 if (err || !user) {
                     errorHandler.sendSystemError(res, err);
@@ -310,6 +332,7 @@ module.exports.updateProfile = (req, res) => {
         return;
     }
 
+    //let userInfo = removeUserSensitiveInformation(req.body);
     User.findOneAndUpdate({_id: req.params.userId}, req.body, {new: true, runValidators: true}, (err, user) => {
         // Has an error when find user
         if (err) {
@@ -430,27 +453,36 @@ module.exports.unpinPromotion = (req, res) => {
     });
 };
 
+/**
+ * Get pinned promotion
+ * @param req
+ * @param res
+ */
 module.exports.getPinnedPromotion = (req, res) => {
     let userId = req.params.userId;
-    let page = req.params.page;
+    let page = req.params.page - 1;
 
-    User.findOne({_id: userId}, (err, user) => {
-        if (err) {
-            errorHandler.sendSystemError(res, err);
-            return;
-        }
+    User.findOne({_id: userId})
+        .populate({
+            path: 'pinnedPromotion._promotionId',
+            options: {limit: defaultPageSize, skip: page * defaultPageSize}
+        })
+        .exec((err, user) => {
+            if (err) {
+                errorHandler.sendSystemError(res, err);
+                return;
+            }
 
-        if (!user) {
-            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
-            return;
-        }
+            if (!user) {
+                errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+                return;
+            }
 
-        // Get promotion
-        let pinnedPromotions = [];
-        for (let i = 0; i < user.pinnedPromotion.length; i++) {
-            Promotion.findOne({_id: user.pinnedPromotion[i]._promotionId}, (err, promotion) => {
-                pinnedPromotions.push(promotion);
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                pinnedPromotion: user.pinnedPromotion
             });
-        }
-    });
+        });
 };
+
