@@ -6,15 +6,30 @@ var promotionController = require('../controllers/promotion.controller'),
 
 
 router
-    .post('/post-promotion', function (req, res, next) {
+    .post('/', function (req, res, next) {
         authController.authenticate(req, res, next);
-    }, function (req, res, next) {
-        // add promotion here
+    }, (req, res) => {
        promotionController.postNewPromotion(req, res);
     })
 
-    .get('/:promotionId', function (req, res) {
+    .get('/:promotionId', (req, res) => {
        promotionController.getPromotionInfo(req, res);
+    })
+
+    .post('/:promotionId/comments', (req, res, next) => {
+       authController.authenticate(req, res, next);
+    }, (req, res) => {
+        promotionController.postNewComment(req, res);
+    })
+
+    .get('/:promotionId/comments', (req, res) => {
+        promotionController.getAllComments(req, res);
     });
+    //
+    // .post('/:promotionId/create-voucher', (req, res, next) => {
+    //     authController.authenticate(req, res, next);
+    // }, (req, res) => {
+    //     promotionController.createVoucher(req, res);
+    // });
 
 module.exports = router;

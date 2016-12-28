@@ -14,5 +14,9 @@ router
 
     .get('/:categoryId/promotions', function (req, res) {
         categoryController.getAllPromotions(req, res);
+    })
+
+    .get('/', (req, res) => {
+       categoryController.getAllCategories(req, res);
     });
 module.exports = router;
