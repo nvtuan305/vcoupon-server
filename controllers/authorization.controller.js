@@ -45,7 +45,7 @@ module.exports.authenticate = (req, res, next) => {
                             userId: user._id,
                             role: user.role
                         };
-
+                      
                         next();
                     } else {
                         errorHandler.sendErrorMessage(res, 401,
