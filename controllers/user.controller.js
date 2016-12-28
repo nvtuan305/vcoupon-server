@@ -18,6 +18,9 @@ function isValidUser(user) {
     if (!user.role || (user.role != 'NORMAL' && user.role != 'PROVIDER'))
         return false;
 
+    if (!user.provider || (user.provider != 'vcoupon' && user.provider != 'facebook' && user.provider != 'google'))
+        return false;
+
     if (!user.name || !user.email || !user.phoneNumber || !user.password)
         return false;
 
@@ -37,10 +40,8 @@ function isValidUser(user) {
 function removeUserSensitiveInformation(user) {
     user.accessToken = undefined;
     user.salt = undefined;
-    //user.role = undefined;
     user.subscribingTopic = undefined;
     user.pinnedPromotion = undefined;
-    //user.provider = undefined;
     user.providerId = undefined;
 
     delete user.promotionCount;
@@ -72,7 +73,7 @@ function responseUserInfo(res, user, token) {
 // Check promotion is pinned or not
 function isPinned(promotionId, pinnedPromotion) {
     for (let i = 0; i < pinnedPromotion.length; i++) {
-        if (pinnedPromotion[i]._id == promotionId)
+        if (pinnedPromotion[i] == promotionId)
             return true;
     }
     return false;
@@ -85,11 +86,13 @@ function isPinned(promotionId, pinnedPromotion) {
  */
 module.exports.signUp = (req, res) => {
     // Check request data
-    if (!req.body.phoneNumber || !req.body.password) {
+    if (!isValidUser(req.body)) {
         errorHandler.sendErrorMessage(res, 400,
             'Bạn chưa điền số điện thoại hoặc mật khẩu', []);
         return;
     }
+
+    removeUserSensitiveInformation(req.body);
 
     User.findOne({phoneNumber: req.body.phoneNumber}, (err, user) => {
         // Has an error when find user
@@ -434,7 +437,7 @@ module.exports.unpinPromotion = (req, res) => {
 
         // Unpin promotion
         for (let i = 0; i < user.pinnedPromotion.length; i++) {
-            if (user.pinnedPromotion[i]._id == promotionId) {
+            if (user.pinnedPromotion[i] == promotionId) {
                 user.pinnedPromotion.splice(i, 1);
                 break;
             }
@@ -460,13 +463,10 @@ module.exports.unpinPromotion = (req, res) => {
  */
 module.exports.getPinnedPromotion = (req, res) => {
     let userId = req.params.userId;
-    let page = req.params.page - 1;
 
     User.findOne({_id: userId})
-        .populate({
-            path: 'pinnedPromotion._promotionId',
-            options: {limit: defaultPageSize, skip: page * defaultPageSize}
-        })
+        .populate('pinnedPromotion')
+        .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
         .exec((err, user) => {
             if (err) {
                 errorHandler.sendSystemError(res, err);
@@ -478,10 +478,16 @@ module.exports.getPinnedPromotion = (req, res) => {
                 return;
             }
 
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                pinnedPromotion: user.pinnedPromotion
+            User.populate(user.pinnedPromotion, {
+                path: '_provider',
+                select: 'avatar name'
+            }, (err, promotion) => {
+                user.pinnedPromotion = promotion;
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    pinnedPromotion: user.pinnedPromotion
+                });
             });
         });
 };

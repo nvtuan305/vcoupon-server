@@ -93,11 +93,9 @@ let userSchema = new mongoose.Schema({
 
     pinnedPromotion: [
         {
-            _promotionId: {
-                type: mongoose.Schema.ObjectId,
-                ref: 'Promotion',
-                unique: true
-            }
+            type: mongoose.Schema.ObjectId,
+            ref: 'Promotion',
+            unique: true
         }
     ],
 

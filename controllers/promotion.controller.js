@@ -15,9 +15,12 @@ let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     commentLimit = 15;
 
 module.exports.postNewPromotion = function (req, res) {
-    if (!isValidPromotion(req.body)) {
+    if (req.authenticatedUser.role != "PROVIDER")
+        res.status(405).json({success: false, message: 'Chức năng này chỉ dùng cho nhà cung cấp chương trình khuyến mãi!'});
+
+    else if (!isValidPromotion(req.body))
         res.status(400).json({success: false, message: 'Please enter the full information!'});
-    }
+
     else {
         User.findOne({_id: req.body._provider},
             function (err, user) {
