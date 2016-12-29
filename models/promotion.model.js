@@ -18,7 +18,10 @@ var promotionSchema = new mongoose.Schema({
         ref: 'Category'
     },
 
-    title: String,
+    title: {
+        type: String,
+        index: 'text'
+    },
 
     cover: {
         type: String,

@@ -486,9 +486,29 @@ module.exports.getPinnedPromotion = (req, res) => {
                 res.status(200).json({
                     success: true,
                     resultMessage: defaultSuccessMessage,
-                    pinnedPromotion: user.pinnedPromotion
+                    promotions: user.pinnedPromotion
                 });
             });
         });
+};
+
+module.exports.getAllProviders = (req, res) => {
+    User.find({role: 'PROVIDER'}, 'name avatar')
+        .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
+        .exec((err, users) => {
+        if (err)
+            errorHandler.sendSystemError(res, err);
+
+        else if (!users)
+            errorHandler.sendErrorMessage(res, 404, 'Không có dữ liệu', []);
+
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                users: users
+            });
+        }
+    });
 };
 
