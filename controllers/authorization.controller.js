@@ -21,7 +21,9 @@ module.exports.getAccessToken = (userId, phoneNumber) => {
 module.exports.authenticate = (req, res, next) => {
     let userId = req.headers.user_id;
     let accessToken = req.headers.access_token;
-
+    
+    console.log(accessToken);
+    
     if (!accessToken || !userId) {
         errorHandler.sendErrorMessage(res, 401,
             'Không thể xác thực người dùng. Thiếu thông tin xác thực', []);
