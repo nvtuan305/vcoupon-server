@@ -480,7 +480,7 @@ module.exports.getPinnedPromotion = (req, res) => {
 
             User.populate(user.pinnedPromotion, {
                 path: '_provider',
-                select: 'avatar name'
+                select: 'avatar name address'
             }, (err, promotion) => {
                 user.pinnedPromotion = promotion;
                 res.status(200).json({
@@ -493,8 +493,9 @@ module.exports.getPinnedPromotion = (req, res) => {
 };
 
 module.exports.getAllProviders = (req, res) => {
-    User.find({role: 'PROVIDER'}, 'name avatar')
+    User.find({role: 'PROVIDER'}, 'name avatar address')
         .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
+        .sort('name')
         .exec((err, users) => {
         if (err)
             errorHandler.sendSystemError(res, err);

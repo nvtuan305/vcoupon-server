@@ -150,7 +150,9 @@ userSchema.methods.authenticate = function (password) {
 userSchema.methods.toJSON = function () {
     let user = this.toObject();
     delete user.password;
-    delete  user.salt;
+    delete user.salt;
+    delete user.pinnedPromotion;
+    delete user.subscribingTopic;
     return user;
 };
 
