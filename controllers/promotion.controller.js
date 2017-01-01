@@ -159,6 +159,27 @@ module.exports.getAllComments = (req, res) => {
     });
 };
 
+module.exports.searchPromotion = (req, res) => {
+    Promotion.find({$text: {$search: req.query.search} }, (err, promotions) => {
+        if (err)
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
+
+        else if (!promotions)
+            errorCtrl.sendErrorMessage(res, 404,
+                'Không có chương trình khuyến mại nào', []);
+
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                promotions: promotions
+            });
+        }
+    })
+};
+
 module.exports.createVoucher = (req, res) => {
     Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
         if (err) {

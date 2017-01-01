@@ -24,6 +24,10 @@ router
 
     .get('/:promotionId/comments', (req, res) => {
         promotionController.getAllComments(req, res);
+    })
+
+    .get('/', (req, res) => {
+       promotionController.searchPromotion(req, res);
     });
     //
     // .post('/:promotionId/create-voucher', (req, res, next) => {

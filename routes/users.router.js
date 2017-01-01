@@ -12,6 +12,10 @@ router
         userController.signUp(req, res);
     })
 
+    .get('/providers', (req, res) => {
+        userController.getAllProviders(req, res);
+    })
+
     // Update profile
     .put('/:userId', (req, res, next) => {
         authController.authenticate(req, res, next);
