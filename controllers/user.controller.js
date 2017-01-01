@@ -463,10 +463,8 @@ module.exports.unpinPromotion = (req, res) => {
  */
 module.exports.getPinnedPromotion = (req, res) => {
     let userId = req.params.userId;
-
-    User.findOne({_id: userId})
+    User.findOne({_id: userId}, { 'pinnedPromotion': { $slice: [ (req.query.page - 1) * defaultPageSize, defaultPageSize ]}})
         .populate('pinnedPromotion')
-        .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
         .exec((err, user) => {
             if (err) {
                 errorHandler.sendSystemError(res, err);
@@ -481,12 +479,11 @@ module.exports.getPinnedPromotion = (req, res) => {
             User.populate(user.pinnedPromotion, {
                 path: '_provider',
                 select: 'avatar name address'
-            }, (err, promotion) => {
-                user.pinnedPromotion = promotion;
+            }, (err, promotions) => {
                 res.status(200).json({
                     success: true,
                     resultMessage: defaultSuccessMessage,
-                    promotions: user.pinnedPromotion
+                    promotions: promotions
                 });
             });
         });
@@ -497,19 +494,19 @@ module.exports.getAllProviders = (req, res) => {
         .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
         .sort('name')
         .exec((err, users) => {
-        if (err)
-            errorHandler.sendSystemError(res, err);
+            if (err)
+                errorHandler.sendSystemError(res, err);
 
-        else if (!users)
-            errorHandler.sendErrorMessage(res, 404, 'Không có dữ liệu', []);
+            else if (!users)
+                errorHandler.sendErrorMessage(res, 404, 'Không có dữ liệu', []);
 
-        else {
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                users: users
-            });
-        }
-    });
+            else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    users: users
+                });
+            }
+        });
 };
 
