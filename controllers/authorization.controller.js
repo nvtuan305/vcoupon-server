@@ -22,7 +22,8 @@ module.exports.authenticate = (req, res, next) => {
     let userId = req.headers.user_id;
     let accessToken = req.headers.access_token;
     
-    console.log(accessToken);
+    console.log('Access token: ' + accessToken);
+    console.log('User id: ' + userId);
     
     if (!accessToken || !userId) {
         errorHandler.sendErrorMessage(res, 401,
