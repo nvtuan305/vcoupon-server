@@ -62,7 +62,7 @@ module.exports.getAllPromotions = (req, res) => {
             res.status(200).json({
                 success: true,
                 resultMessage: defaultSuccessMessage,
-                promotion: promotions
+                promotions: promotions
             });
         }
     })
