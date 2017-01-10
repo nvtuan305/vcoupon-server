@@ -260,7 +260,11 @@ module.exports.followPromotionProvider = (req, res) => {
             // Update user following promotion provider / promotion category
             user.subscribingTopic.push(subscribeInfo);
             user.followingCount++;
-            user.save((err) => {
+
+            User.update({_id: user._id}, {$set: {
+                subscribingTopic: user.subscribingTopic,
+                followingCount: user.followingCount
+            }}, (err) => {
                 if (err) {
                     errorHandler.sendSystemError(res, err);
                 } else {
@@ -278,12 +282,12 @@ module.exports.followPromotionProvider = (req, res) => {
  */
 module.exports.unfollowPromotionProvider = (req, res) => {
     // Check data request
-    if (!req.params.userId || !req.body._publisherId) {
+    if (!req.params.userId || !req.params.publisherId) {
         errorHandler.sendErrorMessage(res, 404, 'Thiếu thông tin. Vui lòng kiểm tra lại', []);
         return;
     }
 
-    if (req.params.userId == req.body._publisherId) {
+    if (req.params.userId == req.params.publisherId) {
         errorHandler.sendErrorMessage(res, 400, "Bạn không thể tự theo dõi mình được.", []);
         return;
     }
@@ -294,14 +298,17 @@ module.exports.unfollowPromotionProvider = (req, res) => {
         } else {
 
             for (let i = 0; i < user.subscribingTopic.length; i++) {
-                if (user.subscribingTopic[i]._publisherId == req.body._publisherId) {
+                if (user.subscribingTopic[i]._publisherId == req.params.publisherId) {
                     user.subscribingTopic.splice(i, 1);
 
                     user.followingCount--;
                     if (user.followingCount < 0) user.followingCount = 0;
 
                     // Update user following promotion provider / promotion category
-                    user.save((err) => {
+                    User.update({_id: user._id}, {$set: {
+                        subscribingTopic: user.subscribingTopic,
+                        followingCount: user.followingCount
+                    }}, (err) => {
                         if (err) {
                             errorHandler.sendSystemError(res, err);
                         } else {
@@ -390,14 +397,14 @@ module.exports.pinPromotion = (req, res) => {
 
         // Pin promotion
         user.pinnedPromotion.push(promotionId);
-        user.save((err) => {
+
+        User.update({_id: user._id}, {$set: {
+            pinnedPromotion: user.pinnedPromotion,
+        }}, (err) => {
             if (err) {
                 errorHandler.sendSystemError(res, err);
             } else {
-                res.status(200).json({
-                    success: true,
-                    resultMessage: 'Ghim khuyến mãi thành công'
-                });
+                res.status(200).json({success: true, resultMessage: 'Ghim khuyến mãi thành công!'});
             }
         });
     });
@@ -410,7 +417,7 @@ module.exports.pinPromotion = (req, res) => {
  */
 module.exports.unpinPromotion = (req, res) => {
     let userId = req.params.userId,
-        promotionId = req.body._promotionId;
+        promotionId = req.params.promotionId;
 
     if (!promotionId) {
         errorHandler.sendErrorMessage(res, 400, 'Thiếu ID chương trình khuyến mại', []);
@@ -443,14 +450,13 @@ module.exports.unpinPromotion = (req, res) => {
             }
         }
 
-        user.save((err) => {
+        User.update({_id: user._id}, {$set: {
+            pinnedPromotion: user.pinnedPromotion,
+        }}, (err) => {
             if (err) {
                 errorHandler.sendSystemError(res, err);
             } else {
-                res.status(200).json({
-                    success: true,
-                    resultMessage: 'Bỏ ghim khuyến mãi thành công'
-                });
+                res.status(200).json({success: true, resultMessage: 'Bỏ ghim khuyến mãi thành công!'});
             }
         });
     });

@@ -41,14 +41,14 @@ router
     })
 
     // Follow an promotion provider or promotion category
-    .post('/:userId/subscribing-topic', (req, res, next) => {
+    .post('/:userId/follows', (req, res, next) => {
         authController.authenticate(req, res, next);
     }, (req, res) => {
         userController.followPromotionProvider(req, res);
     })
 
     // Unfollow an promotion provider or promotion category
-    .delete('/:userId/subscribing-topic', (req, res, next) => {
+    .delete('/:userId/follows/:publisherId', (req, res, next) => {
         authController.authenticate(req, res, next);
     }, (req, res) => {
         userController.unfollowPromotionProvider(req, res);
@@ -69,7 +69,7 @@ router
     })
 
     // Unpin promotion
-    .delete('/:userId/pinned-promotion', (req, res, next) => {
+    .delete('/:userId/pinned-promotion/:promotionId', (req, res, next) => {
         authController.authenticate(req, res, next);
     }, (req, res) => {
         userController.unpinPromotion(req, res);
