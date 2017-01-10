@@ -510,3 +510,26 @@ module.exports.getAllProviders = (req, res) => {
         });
 };
 
+module.exports.searchProvider = (req, res) => {
+    User.find({
+        role: 'PROVIDER',
+        $text: {$search: req.query.search} }, 'name avatar address', (err, users) => {
+        if (err)
+            errorHandler.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorHandler.getErrorMessage(err));
+
+        else if (!users)
+            errorHandler.sendErrorMessage(res, 404,
+                'Không có nhà cung cấp nào', []);
+
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                users: users
+            });
+        }
+    })
+};
+
