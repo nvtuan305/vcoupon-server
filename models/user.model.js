@@ -9,8 +9,7 @@ let userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, 'Name is required.'],
-        default: config.user.defaultName,
-        index: 'text'
+        default: config.user.defaultName
     },
 
     avatar: {

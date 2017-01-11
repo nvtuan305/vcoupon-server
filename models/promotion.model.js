@@ -20,7 +20,6 @@ var promotionSchema = new mongoose.Schema({
 
     title: {
         type: String,
-        index: 'text'
     },
 
     cover: {

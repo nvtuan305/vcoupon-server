@@ -513,7 +513,7 @@ module.exports.getAllProviders = (req, res) => {
 module.exports.searchProvider = (req, res) => {
     User.find({
         role: 'PROVIDER',
-        $text: {$search: req.query.search} }, 'name avatar address', (err, users) => {
+        name: {$regex:req.query.search}}, 'name avatar address', (err, users) => {
         if (err)
             errorHandler.sendErrorMessage(res, 500,
                 defaultErrorMessage,
