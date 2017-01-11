@@ -12,7 +12,8 @@ let Promotion = mongoose.model('Promotion'),
 // Define default response message
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
-    commentLimit = 15;
+    commentLimit = 15,
+    promotionLimit = 15;
 
 module.exports.postNewPromotion = function (req, res) {
     if (req.authenticatedUser.role != "PROVIDER")
@@ -160,7 +161,9 @@ module.exports.getAllComments = (req, res) => {
 };
 
 module.exports.searchPromotion = (req, res) => {
-    Promotion.find({title: {$regex:req.query.search} }, (err, promotions) => {
+    Promotion.find({title: {$regex:req.query.search}})
+        .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
+        .exec((err, promotions) => {
         if (err)
             errorCtrl.sendErrorMessage(res, 500,
                 defaultErrorMessage,

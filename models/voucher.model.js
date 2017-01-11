@@ -20,12 +20,6 @@ var voucherSchema = new mongoose.Schema({
         required: [true, 'Promotion id is required.']
     },
 
-    _providerId: {
-        type: ObjectId,
-        ref: 'User',
-        required: [true, 'Provider id is required.']
-    },
-
     voucherCode: {
         type: String,
         required: [true, 'Voucher code is required.']
@@ -37,14 +31,9 @@ var voucherSchema = new mongoose.Schema({
         required: [true, 'QR code image is required.']
     },
 
-    startDate: {
+    registeredDate: {
         type: Number,
         required: [true, 'Start date is required.']
-    },
-
-    endDate: {
-        type: Number,
-        required: [true, 'End date is required.']
     },
 
     isChecked: {

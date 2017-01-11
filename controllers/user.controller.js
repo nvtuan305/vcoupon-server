@@ -519,7 +519,9 @@ module.exports.getAllProviders = (req, res) => {
 module.exports.searchProvider = (req, res) => {
     User.find({
         role: 'PROVIDER',
-        name: {$regex:req.query.search}}, 'name avatar address', (err, users) => {
+        name: {$regex:req.query.search}}, 'name avatar address')
+        .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
+        .exec((err, users) => {
         if (err)
             errorHandler.sendErrorMessage(res, 500,
                 defaultErrorMessage,
