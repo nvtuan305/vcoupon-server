@@ -1,6 +1,4 @@
-/**
- * Created by apismantis on 03/12/2016.
- */
+'use strict';
 
 let mongoose = require('mongoose'),
     chalk = require('chalk'),

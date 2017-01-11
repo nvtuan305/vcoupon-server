@@ -13,7 +13,10 @@ router
     })
 
     .get('/providers', (req, res) => {
-        userController.getAllProviders(req, res);
+        if (req.query.search == undefined || req.query.search == "")
+            userController.getAllProviders(req, res);
+        else
+            userController.searchProvider(req, res);
     })
 
     // Update profile

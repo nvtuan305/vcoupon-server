@@ -160,7 +160,7 @@ module.exports.getAllComments = (req, res) => {
 };
 
 module.exports.searchPromotion = (req, res) => {
-    Promotion.find({$text: {$search: req.query.search} }, (err, promotions) => {
+    Promotion.find({title: {$regex:req.query.search} }, (err, promotions) => {
         if (err)
             errorCtrl.sendErrorMessage(res, 500,
                 defaultErrorMessage,
