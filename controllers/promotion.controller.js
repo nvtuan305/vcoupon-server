@@ -230,9 +230,13 @@ module.exports.createVoucher = (req, res) => {
             errorCtrl.sendErrorMessage(res, 416,
                 'Đã hết số lượng mã', []);
         }
+        else if (promotion._provider == req.headers.user_id) {
+            errorCtrl.sendErrorMessage(res, 416,
+                'Bạn không thể nhận mã voucher trong chương trình khuyến mãi của bạn', []);
+        }
         else {
             //Xét đã đăng kí voucher chưa
-            Voucher.find({
+            Voucher.findOne({
                 _promotion: promotion._id,
                 _userId: req.headers.user_id
             }, (err, voucher) => {
@@ -345,25 +349,39 @@ function generateCode() {
     return text;
 }
 
-module.exports.getVouchers = (req, res) => {
-    Voucher.find({_promotionId: req.params.promotionId}, (err, vouchers) => {
-        if (err) {
-            errorCtrl.sendErrorMessage(res, 500,
-                defaultErrorMessage,
-                errorCtrl.getErrorMessage(err));
-        }
-        else if (!vouchers) {
-            errorCtrl.sendErrorMessage(res, 404,
-                'Chưa có voucher nào', []);
-        }
-        else {
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                vouchers: vouchers
-            });
-        }
-    })
+module.exports.getAllVouchers = (req, res) => {
+    Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
+       if (err)
+           errorCtrl.sendErrorMessage(res, 500,
+               defaultErrorMessage,
+               errorCtrl.getErrorMessage(err));
+       else if (!promotion)
+           errorCtrl.sendErrorMessage(res, 404,
+               'Chương trình khuyến mãi này không tồn tại', []);
+       else if (promotion._provider != req.headers.user_id)
+           errorCtrl.sendErrorMessage(res, 404,
+               'Chương trình khuyến mãi này không phải của bạn', []);
+       else {
+           Voucher.find({_promotionId: promotion._id}, (err, vouchers) => {
+               if (err) {
+                   errorCtrl.sendErrorMessage(res, 500,
+                       defaultErrorMessage,
+                       errorCtrl.getErrorMessage(err));
+               }
+               else if (!vouchers) {
+                   errorCtrl.sendErrorMessage(res, 404,
+                       'Chưa có voucher nào', []);
+               }
+               else {
+                   res.status(200).json({
+                       success: true,
+                       resultMessage: defaultSuccessMessage,
+                       vouchers: vouchers
+                   });
+               }
+           })
+       }
+    });
 };
 
 function isValidPromotion(promotion) {

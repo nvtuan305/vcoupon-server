@@ -33,10 +33,16 @@ router
             promotionController.searchPromotion(req, res);
     })
 
-    .post('/:promotionId/create-voucher', (req, res, next) => {
+    .post('/:promotionId/vouchers', (req, res, next) => {
         authController.authenticate(req, res, next);
     }, (req, res) => {
         promotionController.createVoucher(req, res);
+    })
+
+    .get('/:promotionId/vouchers', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        promotionController.getAllVouchers(req, res);
     });
 
 module.exports = router;
