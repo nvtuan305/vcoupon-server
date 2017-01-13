@@ -17,10 +17,10 @@ let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
 
 module.exports.postNewPromotion = function (req, res) {
     if (req.authenticatedUser.role != "PROVIDER")
-        res.status(405).json({success: false, message: 'Chức năng này chỉ dùng cho nhà cung cấp chương trình khuyến mãi!'});
+        res.status(405).json({success: false, resultMessage: 'Chức năng này chỉ dùng cho nhà cung cấp chương trình khuyến mãi!'});
 
     else if (!isValidPromotion(req.body))
-        res.status(400).json({success: false, message: 'Please enter the full information!'});
+        res.status(400).json({success: false, resultMessage: 'Please enter the full information!'});
 
     else {
         User.findOne({_id: req.body._provider},
