@@ -167,7 +167,7 @@ module.exports.getAllComments = (req, res) => {
 module.exports.getAllPromotion = (req, res) => {
     Promotion.find({})
         .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
-        .populate('_provider _category', 'name avatar email phoneNumber address website fanpage rating')
+        .populate('_provider', 'name avatar address')
         .exec((err, promotions) => {
             if (err)
                 errorCtrl.sendErrorMessage(res, 500,
@@ -191,7 +191,7 @@ module.exports.getAllPromotion = (req, res) => {
 module.exports.searchPromotion = (req, res) => {
     Promotion.find({title: {$regex:req.query.search}})
         .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
-        .populate('_provider _category', 'name avatar email phoneNumber address website fanpage rating')
+        .populate('_provider', 'name avatar address')
         .exec((err, promotions) => {
         if (err)
             errorCtrl.sendErrorMessage(res, 500,
@@ -386,6 +386,57 @@ module.exports.getAllVouchers = (req, res) => {
            })
        }
     });
+};
+
+module.exports.checkVoucher = (req, res) => {
+    Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
+        if (err)
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
+        else if (!promotion)
+            errorCtrl.sendErrorMessage(res, 404,
+                'Chương trình khuyến mãi này không tồn tại', []);
+        else if (promotion._provider != req.headers.user_id)
+            errorCtrl.sendErrorMessage(res, 410,
+                'Chương trình khuyến mãi này không phải của bạn', []);
+        else {
+            Voucher.findOne({
+                _promotion: promotion._id,
+                voucherCode: req.body.voucherCode
+            }).exec((err, voucher) => {
+                    if (err) {
+                        errorCtrl.sendErrorMessage(res, 500,
+                            defaultErrorMessage,
+                            errorCtrl.getErrorMessage(err));
+                    }
+                    else if (!voucher) {
+                        errorCtrl.sendErrorMessage(res, 404,
+                            'Mã này chưa được đăng kí', []);
+                    }
+                    else if (voucher.isChecked == true) {
+                        errorCtrl.sendErrorMessage(res, 416,
+                            'Mã này đã được sử dụng rồi', []);
+                    }
+                    else {
+                        voucher.isChecked = true;
+                        Voucher.update({_id: voucher._id}, {$set: {
+                            isChecked: voucher.isChecked
+                        }}, (err) => {
+                            if (err)
+                                errorCtrl.sendErrorMessage(res, 500,
+                                    defaultErrorMessage,
+                                    errorCtrl.getErrorMessage(err));
+                            else
+                                res.status(200).json({
+                                    success: true,
+                                    resultMessage: defaultSuccessMessage,
+                                });
+                        });
+                    }
+                })
+        }
+    })
 };
 
 function isValidPromotion(promotion) {

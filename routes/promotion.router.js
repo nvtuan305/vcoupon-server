@@ -43,6 +43,12 @@ router
         authController.authenticate(req, res, next);
     }, (req, res) => {
         promotionController.getAllVouchers(req, res);
+    })
+
+    .post('/:promotionId/vouchers/check-voucher', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        promotionController.checkVoucher(req, res);
     });
 
 module.exports = router;
