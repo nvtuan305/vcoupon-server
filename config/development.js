@@ -25,7 +25,7 @@ module.exports = {
     },
 
     seedDB: {
-        seed: true,
+        seed: false,
         user: [
             {
                 "_id": "585256f1b10aa019d8d66740",
@@ -90,7 +90,7 @@ module.exports = {
             {
                 "_id": "58525775b10aa019d8d66741",
                 "phoneNumber": "01672721761",
-                "email": "lebangtu@happybot.vn",
+                "email": "lbtu@vcoupon.vn",
                 "address": "227 Nguyễn Văn Cừ, Q5, HCM",
                 "provider": "vcoupon",
                 "password": "12345678",
@@ -110,7 +110,7 @@ module.exports = {
             {
                 "_id": "5857eb4b2b61d90011fa90f4",
                 "address": "Bac Lieu",
-                "email": "tqviet0123@gmail.com",
+                "email": "tqviet@vcoupon.vn",
                 "password": "12345678",
                 "phoneNumber": "123456789",
                 "provider": "vcoupon",
@@ -127,7 +127,7 @@ module.exports = {
             {
                 "_id": "58770010a093d700117ccf72",
                 "address": "Lâm Đồng, Việt Nam",
-                "email": "nvtuan@vcoupon.com",
+                "email": "nvtuan@vcoupon.vn",
                 "password": "12345678",
                 "phoneNumber": "199",
                 "provider": "vcoupon",
@@ -139,7 +139,40 @@ module.exports = {
                 "role": "NORMAL",
                 "avatar": "https://scontent.fdad3-2.fna.fbcdn.net/v/t1.0-9/14595653_777832052355186_3428586939021186220_n.jpg?oh=3c7bb51fb51eebdd8b5f7be53aa1a551&oe=590EC21C",
                 "name": "Tuấn Nguyễn"
-            }],
+            },
+            {
+                "_id": "58770010a093d700117aaf71",
+                "address": "Long An, Việt Nam",
+                "email": "nptuan@vcoupon.vn",
+                "password": "12345678",
+                "phoneNumber": "195",
+                "provider": "vcoupon",
+                "promotionCount": 0,
+                "followedCount": 0,
+                "followingCount": 0,
+                "pinnedPromotion": [],
+                "subscribingTopic": [],
+                "role": "NORMAL",
+                "avatar": "https://scontent.fdad3-2.fna.fbcdn.net/v/t1.0-9/14595653_777832052355186_3428586939021186220_n.jpg?oh=3c7bb51fb51eebdd8b5f7be53aa1a551&oe=590EC21C",
+                "name": "Phương Tuấn"
+            },
+            {
+                "_id": "58770010a093d700117aa17f",
+                "address": "Đà Nẵng, Việt Nam",
+                "email": "lqtuan@vcoupon.vn",
+                "password": "12345678",
+                "phoneNumber": "197",
+                "provider": "vcoupon",
+                "promotionCount": 0,
+                "followedCount": 0,
+                "followingCount": 0,
+                "pinnedPromotion": [],
+                "subscribingTopic": [],
+                "role": "NORMAL",
+                "avatar": "http://s1.img.yan.vn//YanNews/2167221/201502/20150227-092922-4_520x390.jpg",
+                "name": "Quang Tuấn"
+            }
+        ],
         promotions: [
             // Fashion
             {
@@ -478,6 +511,10 @@ module.exports = {
             }
         ],
         vouchers: []
+    },
+
+    facebook: {
+        graphUrl: "https://graph.facebook.com/me?fields=id,name,email,gender,location,picture.width(200).height(200)&access_token="
     }
 };
 
