@@ -6,8 +6,6 @@ var mongoose = require('mongoose');
 var ObjectId = mongoose.Schema.ObjectId;
 
 var voucherSchema = new mongoose.Schema({
-    title: String,
-
     _userId: {
         type: ObjectId,
         ref: 'User',
@@ -33,7 +31,7 @@ var voucherSchema = new mongoose.Schema({
 
     registeredDate: {
         type: Number,
-        required: [true, 'Start date is required.']
+        default: getCurrentDate()
     },
 
     isChecked: {
@@ -41,5 +39,16 @@ var voucherSchema = new mongoose.Schema({
         default: false
     }
 });
+
+voucherSchema.pre('save', function (next) {
+    this.registeredDate = getCurrentDate();
+    this.isChecked = false;
+    next();
+});
+
+function getCurrentDate() {
+    return parseInt(new Date().getTime() / 1000);
+}
+
 
 mongoose.model('Voucher', voucherSchema);

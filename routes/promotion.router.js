@@ -27,7 +27,10 @@ router
     })
 
     .get('/', (req, res) => {
-       promotionController.searchPromotion(req, res);
+        if (req.query.search == undefined || req.query.search == "")
+            promotionController.getAllPromotion(req, res);
+        else
+            promotionController.searchPromotion(req, res);
     });
     //
     // .post('/:promotionId/create-voucher', (req, res, next) => {

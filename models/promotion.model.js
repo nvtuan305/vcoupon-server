@@ -91,7 +91,11 @@ var promotionSchema = new mongoose.Schema({
     createdAt: {
         type: Number,
         default: getCurrentDate()
-    }
+    },
+
+    isOneCode: Boolean,
+
+    voucherCode: String,
 });
 
 // Transform promotion to JSON
@@ -102,8 +106,20 @@ promotionSchema.methods.toJSON = function () {
 
 promotionSchema.pre('save', function (next) {
     this.createdAt = getCurrentDate();
+    if (this.isOneCode == true)
+        this.voucherCode = generateCode();
     next();
 });
+
+function generateCode() {
+    let text = "";
+    let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for(let i = 0; i < 5; i++)
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+}
 
 function getCurrentDate() {
     return parseInt(new Date().getTime() / 1000);

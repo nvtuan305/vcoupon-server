@@ -17,10 +17,11 @@ let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
 
 module.exports.postNewPromotion = function (req, res) {
     if (req.authenticatedUser.role != "PROVIDER")
-        res.status(405).json({success: false, message: 'Chức năng này chỉ dùng cho nhà cung cấp chương trình khuyến mãi!'});
+        errorCtrl.sendErrorMessage(res, 405,
+            'Chức năng này chỉ dùng cho nhà cung cấp chương trình khuyến mãi!', []);
 
     else if (!isValidPromotion(req.body))
-        res.status(400).json({success: false, message: 'Please enter the full information!'});
+        errorCtrl.sendErrorMessage(res, 400, 'Please enter the full information!', []);
 
     else {
         User.findOne({_id: req.body._provider},
@@ -52,7 +53,7 @@ module.exports.postNewPromotion = function (req, res) {
                                     } else {
                                         res.status(200).json({
                                             success: true,
-                                            resultMessage: 'Đăng tải chương trình khuyến mãi thành công!'
+                                            resultMessage: defaultSuccessMessage,
                                         });
                                         res.send();
                                     }
@@ -104,7 +105,9 @@ module.exports.postNewComment = (req, res) => {
                     } else {
                         console.info(chalk.blue('Init comment successful!'));
                         promotion.commentCount++;
-                        promotion.save(function (err) {
+                        Promotion.update({_id: promotion._id}, {$set: {
+                            commentCount: promotion.commentCount
+                        }}, (err) => {
                             if (err) {
                                 errorCtrl.sendErrorMessage(res, 500,
                                     defaultErrorMessage,
@@ -160,9 +163,34 @@ module.exports.getAllComments = (req, res) => {
     });
 };
 
+module.exports.getAllPromotion = (req, res) => {
+    Promotion.find({})
+        .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
+        .populate('_provider _category', 'name avatar email phoneNumber address website fanpage rating')
+        .exec((err, promotions) => {
+            if (err)
+                errorCtrl.sendErrorMessage(res, 500,
+                    defaultErrorMessage,
+                    errorCtrl.getErrorMessage(err));
+
+            else if (!promotions)
+                errorCtrl.sendErrorMessage(res, 404,
+                    'Không có chương trình khuyến mại nào', []);
+
+            else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    promotions: promotions
+                });
+            }
+        })
+};
+
 module.exports.searchPromotion = (req, res) => {
     Promotion.find({title: {$regex:req.query.search}})
         .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
+        .populate('_provider _category', 'name avatar email phoneNumber address website fanpage rating')
         .exec((err, promotions) => {
         if (err)
             errorCtrl.sendErrorMessage(res, 500,
@@ -203,30 +231,102 @@ module.exports.createVoucher = (req, res) => {
                 'Đã hết số lượng mã', []);
         }
         else {
-            Voucher.create({}, (err) => {
-               if (err)
-                   errorCtrl.sendErrorMessage(res, 500,
-                       defaultErrorMessage,
-                       errorCtrl.getErrorMessage(err));
-               else {
-                   promotion.amountRegistered++;
-                   promotion.save(function (err) {
-                       if (err) {
-                           errorCtrl.sendErrorMessage(res, 500,
-                               defaultErrorMessage,
-                               errorCtrl.getErrorMessage(err));
-                       } else {
-                           res.status(200).json({
-                               success: true,
-                               resultMessage: defaultSuccessMessage,
-                           });
-                       }
-                   });
-               }
-            });
+            if (promotion.isOneCode == false) {
+                Voucher.find({_promotionId: promotion._id}, (err, vouchers) => {
+                    if (err) {
+                        errorCtrl.sendErrorMessage(res, 500,
+                            defaultErrorMessage,
+                            errorCtrl.getErrorMessage(err));
+                        return;
+                    }
+
+                    let isUsageCode = false;
+                    let key;
+
+                    while (isUsageCode == false) {
+                        isUsageCode = true;
+                        key = generateCode();
+                        for (let i = 0; i < vouchers.length; i++) {
+                            if (vouchers[i].voucherCode == key) {
+                                isUsageCode = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    Voucher.create({
+                        _userId: req.headers.user_id,
+                        _promotionId: promotion._id,
+                        voucherCode: key,
+                        qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + key
+                    }, (err) => {
+                        if (err)
+                            errorCtrl.sendErrorMessage(res, 500,
+                                defaultErrorMessage,
+                                errorCtrl.getErrorMessage(err));
+                        else {
+                            promotion.amountRegistered++;
+                            Promotion.update({_id: promotion._id}, {$set: {
+                                amountRegistered: promotion.amountRegistered
+                            }}, (err) => {
+                                if (err) {
+                                    errorCtrl.sendErrorMessage(res, 500,
+                                        defaultErrorMessage,
+                                        errorCtrl.getErrorMessage(err));
+                                } else {
+                                    res.status(200).json({
+                                        success: true,
+                                        resultMessage: defaultSuccessMessage,
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+            else {
+                Voucher.create({
+                    _userId: req.headers.user_id,
+                    _promotionId: promotion._id,
+                    voucherCode: promotion.voucherCode,
+                    qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + promotion.voucherCode
+                }, (err) => {
+                    if (err)
+                        errorCtrl.sendErrorMessage(res, 500,
+                            defaultErrorMessage,
+                            errorCtrl.getErrorMessage(err));
+                    else {
+                        promotion.amountRegistered++;
+                        Promotion.update({_id: promotion._id}, {$set: {
+                            amountRegistered: promotion.amountRegistered
+                        }}, (err) => {
+                            if (err) {
+                                errorCtrl.sendErrorMessage(res, 500,
+                                    defaultErrorMessage,
+                                    errorCtrl.getErrorMessage(err));
+                            } else {
+                                res.status(200).json({
+                                    success: true,
+                                    resultMessage: defaultSuccessMessage,
+                                });
+                            }
+                        });
+                    }
+                });
+            }
         }
     })
 };
+
+function generateCode() {
+    let text = "";
+    let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for(let i = 0; i < 5; i++)
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+}
 
 module.exports.getVouchers = (req, res) => {
     Voucher.find({_promotionId: req.params.promotionId}, (err, vouchers) => {
@@ -266,5 +366,6 @@ function removeRedundant(promotion) {
     delete promotion.commentCount;
     delete promotion.pinnedCount;
     delete promotion.amountRegistered;
+    delete promotion.voucherCode;
     return promotion;
 }
