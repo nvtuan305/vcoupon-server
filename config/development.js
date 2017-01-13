@@ -25,7 +25,7 @@ module.exports = {
     },
 
     seedDB: {
-        seed: true,
+        seed: false,
         user: [
             {
                 "_id": "585256f1b10aa019d8d66740",
@@ -155,7 +155,24 @@ module.exports = {
                 "role": "NORMAL",
                 "avatar": "https://scontent.fdad3-2.fna.fbcdn.net/v/t1.0-9/14595653_777832052355186_3428586939021186220_n.jpg?oh=3c7bb51fb51eebdd8b5f7be53aa1a551&oe=590EC21C",
                 "name": "Phương Tuấn"
-            }],
+            },
+            {
+                "_id": "58770010a093d700117aa17f",
+                "address": "Đà Nẵng, Việt Nam",
+                "email": "lqtuan@vcoupon.vn",
+                "password": "12345678",
+                "phoneNumber": "197",
+                "provider": "vcoupon",
+                "promotionCount": 0,
+                "followedCount": 0,
+                "followingCount": 0,
+                "pinnedPromotion": [],
+                "subscribingTopic": [],
+                "role": "NORMAL",
+                "avatar": "http://s1.img.yan.vn//YanNews/2167221/201502/20150227-092922-4_520x390.jpg",
+                "name": "Quang Tuấn"
+            }
+        ],
         promotions: [
             // Fashion
             {
@@ -494,6 +511,10 @@ module.exports = {
             }
         ],
         vouchers: []
+    },
+
+    facebook: {
+        graphUrl: "https://graph.facebook.com/me?fields=id,name,email,gender,location,picture.width(200).height(200)&access_token="
     }
 };
 

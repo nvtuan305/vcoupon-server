@@ -33,6 +33,13 @@ router
         userController.getUserInfo(req, res);
     })
 
+    // Update user phone number
+    .post('/:userId/change-phone-number', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        userController.updatePhoneNumber(req, res);
+    })
+
     // Sign in account
     .post('/sign-in', (req, res) => {
         userController.signIn(req, res);
@@ -41,6 +48,11 @@ router
     // Sign in with facebook
     .post('/sign-in-facebook', (req, res) => {
         userController.signInWithFacebook(req, res);
+    })
+
+    // Sign out account
+    .delete('/:userId/sign-out', (req, res) => {
+        userController.signOut(req, res);
     })
 
     // Follow an promotion provider or promotion category
