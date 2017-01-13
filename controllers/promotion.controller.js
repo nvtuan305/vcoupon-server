@@ -13,8 +13,7 @@ let Promotion = mongoose.model('Promotion'),
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
     commentLimit = 15,
-    promotionLimit = 15,
-    voucherLimit = 15;
+    promotionLimit = 15;
 
 module.exports.postNewPromotion = function (req, res) {
     if (req.authenticatedUser.role != "PROVIDER")
@@ -54,7 +53,7 @@ module.exports.postNewPromotion = function (req, res) {
                                     } else {
                                         res.status(200).json({
                                             success: true,
-                                            resultMessage: defaultSuccessMessage,
+                                            resultMessage: 'Đăng tải chương trình khuyến mãi thành công!'
                                         });
                                         res.send();
                                     }

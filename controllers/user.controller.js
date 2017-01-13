@@ -152,7 +152,7 @@ module.exports.signIn = (req, res) => {
             }
             else {
                 if (user.authenticate(req.body.password)) {
-                    let token = authController.getAccessToken(user._id, user.phoneNumber);
+                    let token = authController.getAccessToken(user);
 
                     if (token) {
                         responseUserInfo(res, user, token);

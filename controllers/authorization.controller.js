@@ -7,9 +7,15 @@ let mongoose = require('mongoose'),
 
 let User = mongoose.model('User');
 
-module.exports.getAccessToken = (userId, phoneNumber) => {
+module.exports.getAccessToken = (user) => {
+    let payload = {
+        id: user._id,
+        phoneNumber: user.phoneNumber,
+        role: user.role
+    };
+
     // Generate new token for this user
-    return jwt.sign({userId: userId, phoneNumber: phoneNumber}, development.token.secretKey, {expiresIn: '100d'});
+    return jwt.sign(payload, development.token.secretKey, {expiresIn: '100d'});
 };
 
 /***
@@ -19,48 +25,43 @@ module.exports.getAccessToken = (userId, phoneNumber) => {
  * @param next
  */
 module.exports.authenticate = (req, res, next) => {
-    let userId = req.headers.user_id;
-    let accessToken = req.headers.access_token;
-    
-    console.log('Access token: ' + accessToken);
-    console.log('User id: ' + userId);
-    
-    if (!accessToken || !userId) {
+    let accessToken = req.headers.access_token || req.params.access_token || req.query.access_token || req.body.access_token;
+
+    if (!accessToken) {
         errorHandler.sendErrorMessage(res, 401,
-            'Không thể xác thực người dùng. Thiếu thông tin xác thực', []);
+            'Thiếu thông tin xác thực người dùng', []);
+        return;
     }
 
-    // Authenticate token string
-    else {
-        try {
-            // Decode token string
-            let decoded = jwt.verify(accessToken, development.token.secretKey);
-
-            // Find token in database
-            User.findOne({_id: decoded.userId, accessToken: accessToken}, function (err, user) {
-                if (err) {
-                    errorHandler.sendErrorMessage(res, 401,
-                        'Không thể xác thực người dùng. Vui lòng thử lại!',
-                        errorHandler.getErrorMessage(err));
-                } else {
-                    if (user && user._id == userId) {
-                        req.authenticatedUser = {
-                            userId: user._id,
-                            role: user.role
-                        };
-                      
-                        next();
-                    } else {
-                        errorHandler.sendErrorMessage(res, 401,
-                            'Thông tin xác thực không chính xác', []);
-                    }
-                }
-            });
-
-        } catch (err) {
+    jwt.verify(accessToken, development.token.secretKey, function (err, decoded) {
+        // Authentication failed
+        if (err) {
             errorHandler.sendErrorMessage(res, 401,
                 'Access token hết hạn hoặc không chính xác!',
                 errorHandler.getErrorMessage(err));
+            return;
         }
-    }
+
+        User.findOne({_id: decoded.id}, function (err, user) {
+            if (err) {
+                errorHandler.sendErrorMessage(res, 401,
+                    'Không thể xác thực người dùng. Vui lòng thử lại!',
+                    errorHandler.getErrorMessage(err));
+                return;
+            }
+
+            if (user && user.accessToken == accessToken) {
+                req.authenticatedUser = {
+                    userId: user._id,
+                    role: user.role
+                };
+
+                next();
+
+            } else {
+                errorHandler.sendErrorMessage(res, 401,
+                    'Thông tin xác thực không chính xác', []);
+            }
+        });
+    });
 };
