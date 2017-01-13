@@ -6,7 +6,8 @@ let mongoose = require('mongoose'),
     errorHandler = require('./error.controller.js');
 
 let User = mongoose.model('User'),
-    Promotion = mongoose.model('Promotion');
+    Promotion = mongoose.model('Promotion'),
+    Voucher = mongoose.model('Voucher');
 
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
@@ -261,10 +262,12 @@ module.exports.followPromotionProvider = (req, res) => {
             user.subscribingTopic.push(subscribeInfo);
             user.followingCount++;
 
-            User.update({_id: user._id}, {$set: {
-                subscribingTopic: user.subscribingTopic,
-                followingCount: user.followingCount
-            }}, (err) => {
+            User.update({_id: user._id}, {
+                $set: {
+                    subscribingTopic: user.subscribingTopic,
+                    followingCount: user.followingCount
+                }
+            }, (err) => {
                 if (err) {
                     errorHandler.sendSystemError(res, err);
                 } else {
@@ -305,10 +308,12 @@ module.exports.unfollowPromotionProvider = (req, res) => {
                     if (user.followingCount < 0) user.followingCount = 0;
 
                     // Update user following promotion provider / promotion category
-                    User.update({_id: user._id}, {$set: {
-                        subscribingTopic: user.subscribingTopic,
-                        followingCount: user.followingCount
-                    }}, (err) => {
+                    User.update({_id: user._id}, {
+                        $set: {
+                            subscribingTopic: user.subscribingTopic,
+                            followingCount: user.followingCount
+                        }
+                    }, (err) => {
                         if (err) {
                             errorHandler.sendSystemError(res, err);
                         } else {
@@ -398,9 +403,11 @@ module.exports.pinPromotion = (req, res) => {
         // Pin promotion
         user.pinnedPromotion.push(promotionId);
 
-        User.update({_id: user._id}, {$set: {
-            pinnedPromotion: user.pinnedPromotion,
-        }}, (err) => {
+        User.update({_id: user._id}, {
+            $set: {
+                pinnedPromotion: user.pinnedPromotion,
+            }
+        }, (err) => {
             if (err) {
                 errorHandler.sendSystemError(res, err);
             } else {
@@ -450,9 +457,11 @@ module.exports.unpinPromotion = (req, res) => {
             }
         }
 
-        User.update({_id: user._id}, {$set: {
-            pinnedPromotion: user.pinnedPromotion,
-        }}, (err) => {
+        User.update({_id: user._id}, {
+            $set: {
+                pinnedPromotion: user.pinnedPromotion,
+            }
+        }, (err) => {
             if (err) {
                 errorHandler.sendSystemError(res, err);
             } else {
@@ -469,7 +478,7 @@ module.exports.unpinPromotion = (req, res) => {
  */
 module.exports.getPinnedPromotion = (req, res) => {
     let userId = req.params.userId;
-    User.findOne({_id: userId}, { 'pinnedPromotion': { $slice: [ (req.query.page - 1) * defaultPageSize, defaultPageSize ]}})
+    User.findOne({_id: userId}, {'pinnedPromotion': {$slice: [(req.query.page - 1) * defaultPageSize, defaultPageSize]}})
         .populate('pinnedPromotion')
         .exec((err, user) => {
             if (err) {
@@ -519,25 +528,55 @@ module.exports.getAllProviders = (req, res) => {
 module.exports.searchProvider = (req, res) => {
     User.find({
         role: 'PROVIDER',
-        name: {$regex:req.query.search}}, 'name avatar address')
+        name: {$regex: req.query.search}
+    }, 'name avatar address')
         .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
         .exec((err, users) => {
-        if (err)
-            errorHandler.sendErrorMessage(res, 500,
-                defaultErrorMessage,
-                errorHandler.getErrorMessage(err));
+            if (err)
+                errorHandler.sendErrorMessage(res, 500,
+                    defaultErrorMessage,
+                    errorHandler.getErrorMessage(err));
 
-        else if (!users)
-            errorHandler.sendErrorMessage(res, 404,
-                'Không có nhà cung cấp nào', []);
+            else if (!users)
+                errorHandler.sendErrorMessage(res, 404,
+                    'Không có nhà cung cấp nào', []);
 
-        else {
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                users: users
-            });
-        }
-    })
+            else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    users: users
+                });
+            }
+        })
+};
+
+module.exports.getVouchers = (req, res) => {
+    Voucher.find({_user: req.params.userId})
+        .populate({
+            path: '_promotion',
+            select: '_category _provider title commentCount addresses discountType discount endDate startDate condition cover',
+            populate: {
+                path: '_provider _category',
+                select: 'name avatar address'
+            }
+        })
+        .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
+        .exec((err, vouchers) => {
+            if (err)
+                errorHandler.sendErrorMessage(res, 500,
+                    defaultErrorMessage,
+                    errorHandler.getErrorMessage(err));
+            else if (!vouchers)
+                errorHandler.sendErrorMessage(res, 404,
+                    'Bạn chưa đăng kí voucher nào!', []);
+            else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    vouchers: vouchers
+                });
+            }
+        });
 };
 

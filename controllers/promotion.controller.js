@@ -13,7 +13,8 @@ let Promotion = mongoose.model('Promotion'),
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
     commentLimit = 15,
-    promotionLimit = 15;
+    promotionLimit = 15,
+    voucherLimit = 15;
 
 module.exports.postNewPromotion = function (req, res) {
     if (req.authenticatedUser.role != "PROVIDER")
@@ -238,7 +239,7 @@ module.exports.createVoucher = (req, res) => {
             //Xét đã đăng kí voucher chưa
             Voucher.findOne({
                 _promotion: promotion._id,
-                _userId: req.headers.user_id
+                _user: req.headers.user_id
             }, (err, voucher) => {
                 if (err)
                     errorCtrl.sendErrorMessage(res, 500,
@@ -251,8 +252,8 @@ module.exports.createVoucher = (req, res) => {
                     // Nếu promotion sử dụng mã chung cho tất cả voucher
                     if (promotion.isOneCode == true) {
                         Voucher.create({
-                            _userId: req.headers.user_id,
-                            _promotionId: promotion._id,
+                            _user: req.headers.user_id,
+                            _promotion: promotion._id,
                             voucherCode: promotion.voucherCode,
                             qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + promotion.voucherCode
                         }, (err) => {
@@ -281,7 +282,7 @@ module.exports.createVoucher = (req, res) => {
                     }
                     // Nếu promotion sử dụng mã code riêng cho từng voucher
                     else {
-                        Voucher.find({_promotionId: promotion._id}, (err, vouchers) => {
+                        Voucher.find({_promotion: promotion._id}, (err, vouchers) => {
                             if (err) {
                                 errorCtrl.sendErrorMessage(res, 500,
                                     defaultErrorMessage,
@@ -304,8 +305,8 @@ module.exports.createVoucher = (req, res) => {
                             }
 
                             Voucher.create({
-                                _userId: req.headers.user_id,
-                                _promotionId: promotion._id,
+                                _user: req.headers.user_id,
+                                _promotion: promotion._id,
                                 voucherCode: key,
                                 qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + key
                             }, (err) => {
@@ -359,10 +360,13 @@ module.exports.getAllVouchers = (req, res) => {
            errorCtrl.sendErrorMessage(res, 404,
                'Chương trình khuyến mãi này không tồn tại', []);
        else if (promotion._provider != req.headers.user_id)
-           errorCtrl.sendErrorMessage(res, 404,
+           errorCtrl.sendErrorMessage(res, 410,
                'Chương trình khuyến mãi này không phải của bạn', []);
        else {
-           Voucher.find({_promotionId: promotion._id}, (err, vouchers) => {
+           Voucher.find({_promotion: promotion._id})
+               .skip((req.query.page - 1) * voucherLimit).limit(voucherLimit)
+               .populate('_user', 'name avatar gender')
+               .exec((err, vouchers) => {
                if (err) {
                    errorCtrl.sendErrorMessage(res, 500,
                        defaultErrorMessage,
