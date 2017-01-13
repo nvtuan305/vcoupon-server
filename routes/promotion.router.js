@@ -27,13 +27,28 @@ router
     })
 
     .get('/', (req, res) => {
-       promotionController.searchPromotion(req, res);
+        if (req.query.search == undefined || req.query.search == "")
+            promotionController.getAllPromotion(req, res);
+        else
+            promotionController.searchPromotion(req, res);
+    })
+
+    .post('/:promotionId/vouchers', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        promotionController.createVoucher(req, res);
+    })
+
+    .get('/:promotionId/vouchers', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        promotionController.getAllVouchers(req, res);
+    })
+
+    .post('/:promotionId/vouchers/check-voucher', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        promotionController.checkVoucher(req, res);
     });
-    //
-    // .post('/:promotionId/create-voucher', (req, res, next) => {
-    //     authController.authenticate(req, res, next);
-    // }, (req, res) => {
-    //     promotionController.createVoucher(req, res);
-    // });
 
 module.exports = router;

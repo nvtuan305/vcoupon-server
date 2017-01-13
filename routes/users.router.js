@@ -76,6 +76,12 @@ router
         authController.authenticate(req, res, next);
     }, (req, res) => {
         userController.unpinPromotion(req, res);
+    })
+
+    .get('/:userId/vouchers', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        userController.getVouchers(req, res);
     });
 
 module.exports = router;

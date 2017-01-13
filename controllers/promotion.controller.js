@@ -17,10 +17,11 @@ let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
 
 module.exports.postNewPromotion = function (req, res) {
     if (req.authenticatedUser.role != "PROVIDER")
-        res.status(405).json({success: false, resultMessage: 'Chức năng này chỉ dùng cho nhà cung cấp chương trình khuyến mãi!'});
+        errorCtrl.sendErrorMessage(res, 405,
+            'Chức năng này chỉ dùng cho nhà cung cấp chương trình khuyến mãi!', []);
 
     else if (!isValidPromotion(req.body))
-        res.status(400).json({success: false, resultMessage: 'Please enter the full information!'});
+        errorCtrl.sendErrorMessage(res, 400, 'Please enter the full information!', []);
 
     else {
         User.findOne({_id: req.body._provider},
@@ -82,7 +83,7 @@ module.exports.getPromotionInfo = function (req, res) {
 
 module.exports.postNewComment = (req, res) => {
     if (!isValidComment(req.body)) {
-        res.status(400).json({success: false, message: 'Please enter the full information!'});
+        errorCtrl.sendErrorMessage(res, 400, 'Please enter the full information!', []);
     }
     else {
         Promotion.findOne({_id: req.params.promotionId}, function (err, promotion) {
@@ -104,7 +105,9 @@ module.exports.postNewComment = (req, res) => {
                     } else {
                         console.info(chalk.blue('Init comment successful!'));
                         promotion.commentCount++;
-                        promotion.save(function (err) {
+                        Promotion.update({_id: promotion._id}, {$set: {
+                            commentCount: promotion.commentCount
+                        }}, (err) => {
                             if (err) {
                                 errorCtrl.sendErrorMessage(res, 500,
                                     defaultErrorMessage,
@@ -160,9 +163,34 @@ module.exports.getAllComments = (req, res) => {
     });
 };
 
+module.exports.getAllPromotion = (req, res) => {
+    Promotion.find({})
+        .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
+        .populate('_provider', 'name avatar address')
+        .exec((err, promotions) => {
+            if (err)
+                errorCtrl.sendErrorMessage(res, 500,
+                    defaultErrorMessage,
+                    errorCtrl.getErrorMessage(err));
+
+            else if (!promotions)
+                errorCtrl.sendErrorMessage(res, 404,
+                    'Không có chương trình khuyến mại nào', []);
+
+            else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    promotions: promotions
+                });
+            }
+        })
+};
+
 module.exports.searchPromotion = (req, res) => {
     Promotion.find({title: {$regex:req.query.search}})
         .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
+        .populate('_provider', 'name avatar address')
         .exec((err, promotions) => {
         if (err)
             errorCtrl.sendErrorMessage(res, 500,
@@ -194,7 +222,7 @@ module.exports.createVoucher = (req, res) => {
             errorCtrl.sendErrorMessage(res, 404,
                 'Chương trình khuyến mãi này không tồn tại', []);
         }
-        else if (parseInt(new Date().getTime() / 1000) > prmotion.endDate) {
+        else if (parseInt(new Date().getTime() / 1000) > promotion.endDate) {
             errorCtrl.sendErrorMessage(res, 410,
                 'Chương trình khuyến mãi này đã hết hạn', []);
         }
@@ -202,49 +230,210 @@ module.exports.createVoucher = (req, res) => {
             errorCtrl.sendErrorMessage(res, 416,
                 'Đã hết số lượng mã', []);
         }
+        else if (promotion._provider == req.headers.user_id) {
+            errorCtrl.sendErrorMessage(res, 416,
+                'Bạn không thể nhận mã voucher trong chương trình khuyến mãi của bạn', []);
+        }
         else {
-            Voucher.create({}, (err) => {
-               if (err)
-                   errorCtrl.sendErrorMessage(res, 500,
-                       defaultErrorMessage,
-                       errorCtrl.getErrorMessage(err));
-               else {
-                   promotion.amountRegistered++;
-                   promotion.save(function (err) {
-                       if (err) {
-                           errorCtrl.sendErrorMessage(res, 500,
-                               defaultErrorMessage,
-                               errorCtrl.getErrorMessage(err));
-                       } else {
-                           res.status(200).json({
-                               success: true,
-                               resultMessage: defaultSuccessMessage,
-                           });
-                       }
-                   });
-               }
+            //Xét đã đăng kí voucher chưa
+            Voucher.findOne({
+                _promotion: promotion._id,
+                _user: req.headers.user_id
+            }, (err, voucher) => {
+                if (err)
+                    errorCtrl.sendErrorMessage(res, 500,
+                        defaultErrorMessage,
+                        errorCtrl.getErrorMessage(err));
+                else if (voucher)
+                    errorCtrl.sendErrorMessage(res, 410,
+                        'Bạn đã đăng kí chương trình khuyến mãi này rồi!', []);
+                else {
+                    // Nếu promotion sử dụng mã chung cho tất cả voucher
+                    if (promotion.isOneCode == true) {
+                        Voucher.create({
+                            _user: req.headers.user_id,
+                            _promotion: promotion._id,
+                            voucherCode: promotion.voucherCode,
+                            qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + promotion.voucherCode
+                        }, (err) => {
+                            if (err)
+                                errorCtrl.sendErrorMessage(res, 500,
+                                    defaultErrorMessage,
+                                    errorCtrl.getErrorMessage(err));
+                            else {
+                                promotion.amountRegistered++;
+                                Promotion.update({_id: promotion._id}, {$set: {
+                                    amountRegistered: promotion.amountRegistered
+                                }}, (err) => {
+                                    if (err) {
+                                        errorCtrl.sendErrorMessage(res, 500,
+                                            defaultErrorMessage,
+                                            errorCtrl.getErrorMessage(err));
+                                    } else {
+                                        res.status(200).json({
+                                            success: true,
+                                            resultMessage: defaultSuccessMessage,
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    // Nếu promotion sử dụng mã code riêng cho từng voucher
+                    else {
+                        Voucher.find({_promotion: promotion._id}, (err, vouchers) => {
+                            if (err) {
+                                errorCtrl.sendErrorMessage(res, 500,
+                                    defaultErrorMessage,
+                                    errorCtrl.getErrorMessage(err));
+                                return;
+                            }
+
+                            let isUsageCode = false;
+                            let key;
+
+                            while (isUsageCode == false) {
+                                isUsageCode = true;
+                                key = generateCode();
+                                for (let i = 0; i < vouchers.length; i++) {
+                                    if (vouchers[i].voucherCode == key) {
+                                        isUsageCode = false;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            Voucher.create({
+                                _user: req.headers.user_id,
+                                _promotion: promotion._id,
+                                voucherCode: key,
+                                qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + key
+                            }, (err) => {
+                                if (err)
+                                    errorCtrl.sendErrorMessage(res, 500,
+                                        defaultErrorMessage,
+                                        errorCtrl.getErrorMessage(err));
+                                else {
+                                    promotion.amountRegistered++;
+                                    Promotion.update({_id: promotion._id}, {$set: {
+                                        amountRegistered: promotion.amountRegistered
+                                    }}, (err) => {
+                                        if (err) {
+                                            errorCtrl.sendErrorMessage(res, 500,
+                                                defaultErrorMessage,
+                                                errorCtrl.getErrorMessage(err));
+                                        } else {
+                                            res.status(200).json({
+                                                success: true,
+                                                resultMessage: defaultSuccessMessage,
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                    }
+                }
             });
         }
     })
 };
 
-module.exports.getVouchers = (req, res) => {
-    Voucher.find({_promotionId: req.params.promotionId}, (err, vouchers) => {
-        if (err) {
+function generateCode() {
+    let text = "";
+    let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for(let i = 0; i < 5; i++)
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+}
+
+module.exports.getAllVouchers = (req, res) => {
+    Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
+       if (err)
+           errorCtrl.sendErrorMessage(res, 500,
+               defaultErrorMessage,
+               errorCtrl.getErrorMessage(err));
+       else if (!promotion)
+           errorCtrl.sendErrorMessage(res, 404,
+               'Chương trình khuyến mãi này không tồn tại', []);
+       else if (promotion._provider != req.headers.user_id)
+           errorCtrl.sendErrorMessage(res, 410,
+               'Chương trình khuyến mãi này không phải của bạn', []);
+       else {
+           Voucher.find({_promotion: promotion._id})
+               .skip((req.query.page - 1) * voucherLimit).limit(voucherLimit)
+               .populate('_user', 'name avatar gender')
+               .exec((err, vouchers) => {
+               if (err) {
+                   errorCtrl.sendErrorMessage(res, 500,
+                       defaultErrorMessage,
+                       errorCtrl.getErrorMessage(err));
+               }
+               else if (!vouchers) {
+                   errorCtrl.sendErrorMessage(res, 404,
+                       'Chưa có voucher nào', []);
+               }
+               else {
+                   res.status(200).json({
+                       success: true,
+                       resultMessage: defaultSuccessMessage,
+                       vouchers: vouchers
+                   });
+               }
+           })
+       }
+    });
+};
+
+module.exports.checkVoucher = (req, res) => {
+    Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
+        if (err)
             errorCtrl.sendErrorMessage(res, 500,
                 defaultErrorMessage,
                 errorCtrl.getErrorMessage(err));
-        }
-        else if (!vouchers) {
+        else if (!promotion)
             errorCtrl.sendErrorMessage(res, 404,
-                'Chưa có voucher nào', []);
-        }
+                'Chương trình khuyến mãi này không tồn tại', []);
+        else if (promotion._provider != req.headers.user_id)
+            errorCtrl.sendErrorMessage(res, 410,
+                'Chương trình khuyến mãi này không phải của bạn', []);
         else {
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                vouchers: vouchers
-            });
+            Voucher.findOne({
+                _promotion: promotion._id,
+                voucherCode: req.body.voucherCode
+            }).exec((err, voucher) => {
+                    if (err) {
+                        errorCtrl.sendErrorMessage(res, 500,
+                            defaultErrorMessage,
+                            errorCtrl.getErrorMessage(err));
+                    }
+                    else if (!voucher) {
+                        errorCtrl.sendErrorMessage(res, 404,
+                            'Mã này chưa được đăng kí', []);
+                    }
+                    else if (voucher.isChecked == true) {
+                        errorCtrl.sendErrorMessage(res, 416,
+                            'Mã này đã được sử dụng rồi', []);
+                    }
+                    else {
+                        voucher.isChecked = true;
+                        Voucher.update({_id: voucher._id}, {$set: {
+                            isChecked: voucher.isChecked
+                        }}, (err) => {
+                            if (err)
+                                errorCtrl.sendErrorMessage(res, 500,
+                                    defaultErrorMessage,
+                                    errorCtrl.getErrorMessage(err));
+                            else
+                                res.status(200).json({
+                                    success: true,
+                                    resultMessage: defaultSuccessMessage,
+                                });
+                        });
+                    }
+                })
         }
     })
 };
@@ -266,5 +455,6 @@ function removeRedundant(promotion) {
     delete promotion.commentCount;
     delete promotion.pinnedCount;
     delete promotion.amountRegistered;
+    delete promotion.voucherCode;
     return promotion;
 }
