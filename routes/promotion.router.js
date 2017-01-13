@@ -31,12 +31,12 @@ router
             promotionController.getAllPromotion(req, res);
         else
             promotionController.searchPromotion(req, res);
+    })
+
+    .post('/:promotionId/create-voucher', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        promotionController.createVoucher(req, res);
     });
-    //
-    // .post('/:promotionId/create-voucher', (req, res, next) => {
-    //     authController.authenticate(req, res, next);
-    // }, (req, res) => {
-    //     promotionController.createVoucher(req, res);
-    // });
 
 module.exports = router;

@@ -222,7 +222,7 @@ module.exports.createVoucher = (req, res) => {
             errorCtrl.sendErrorMessage(res, 404,
                 'Chương trình khuyến mãi này không tồn tại', []);
         }
-        else if (parseInt(new Date().getTime() / 1000) > prmotion.endDate) {
+        else if (parseInt(new Date().getTime() / 1000) > promotion.endDate) {
             errorCtrl.sendErrorMessage(res, 410,
                 'Chương trình khuyến mãi này đã hết hạn', []);
         }
@@ -231,89 +231,106 @@ module.exports.createVoucher = (req, res) => {
                 'Đã hết số lượng mã', []);
         }
         else {
-            if (promotion.isOneCode == false) {
-                Voucher.find({_promotionId: promotion._id}, (err, vouchers) => {
-                    if (err) {
-                        errorCtrl.sendErrorMessage(res, 500,
-                            defaultErrorMessage,
-                            errorCtrl.getErrorMessage(err));
-                        return;
-                    }
-
-                    let isUsageCode = false;
-                    let key;
-
-                    while (isUsageCode == false) {
-                        isUsageCode = true;
-                        key = generateCode();
-                        for (let i = 0; i < vouchers.length; i++) {
-                            if (vouchers[i].voucherCode == key) {
-                                isUsageCode = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    Voucher.create({
-                        _userId: req.headers.user_id,
-                        _promotionId: promotion._id,
-                        voucherCode: key,
-                        qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + key
-                    }, (err) => {
-                        if (err)
-                            errorCtrl.sendErrorMessage(res, 500,
-                                defaultErrorMessage,
-                                errorCtrl.getErrorMessage(err));
-                        else {
-                            promotion.amountRegistered++;
-                            Promotion.update({_id: promotion._id}, {$set: {
-                                amountRegistered: promotion.amountRegistered
-                            }}, (err) => {
-                                if (err) {
-                                    errorCtrl.sendErrorMessage(res, 500,
-                                        defaultErrorMessage,
-                                        errorCtrl.getErrorMessage(err));
-                                } else {
-                                    res.status(200).json({
-                                        success: true,
-                                        resultMessage: defaultSuccessMessage,
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
-            }
-            else {
-                Voucher.create({
-                    _userId: req.headers.user_id,
-                    _promotionId: promotion._id,
-                    voucherCode: promotion.voucherCode,
-                    qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + promotion.voucherCode
-                }, (err) => {
-                    if (err)
-                        errorCtrl.sendErrorMessage(res, 500,
-                            defaultErrorMessage,
-                            errorCtrl.getErrorMessage(err));
-                    else {
-                        promotion.amountRegistered++;
-                        Promotion.update({_id: promotion._id}, {$set: {
-                            amountRegistered: promotion.amountRegistered
-                        }}, (err) => {
-                            if (err) {
+            //Xét đã đăng kí voucher chưa
+            Voucher.find({
+                _promotion: promotion._id,
+                _userId: req.headers.user_id
+            }, (err, voucher) => {
+                if (err)
+                    errorCtrl.sendErrorMessage(res, 500,
+                        defaultErrorMessage,
+                        errorCtrl.getErrorMessage(err));
+                else if (voucher)
+                    errorCtrl.sendErrorMessage(res, 410,
+                        'Bạn đã đăng kí chương trình khuyến mãi này rồi!', []);
+                else {
+                    // Nếu promotion sử dụng mã chung cho tất cả voucher
+                    if (promotion.isOneCode == true) {
+                        Voucher.create({
+                            _userId: req.headers.user_id,
+                            _promotionId: promotion._id,
+                            voucherCode: promotion.voucherCode,
+                            qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + promotion.voucherCode
+                        }, (err) => {
+                            if (err)
                                 errorCtrl.sendErrorMessage(res, 500,
                                     defaultErrorMessage,
                                     errorCtrl.getErrorMessage(err));
-                            } else {
-                                res.status(200).json({
-                                    success: true,
-                                    resultMessage: defaultSuccessMessage,
+                            else {
+                                promotion.amountRegistered++;
+                                Promotion.update({_id: promotion._id}, {$set: {
+                                    amountRegistered: promotion.amountRegistered
+                                }}, (err) => {
+                                    if (err) {
+                                        errorCtrl.sendErrorMessage(res, 500,
+                                            defaultErrorMessage,
+                                            errorCtrl.getErrorMessage(err));
+                                    } else {
+                                        res.status(200).json({
+                                            success: true,
+                                            resultMessage: defaultSuccessMessage,
+                                        });
+                                    }
                                 });
                             }
                         });
                     }
-                });
-            }
+                    // Nếu promotion sử dụng mã code riêng cho từng voucher
+                    else {
+                        Voucher.find({_promotionId: promotion._id}, (err, vouchers) => {
+                            if (err) {
+                                errorCtrl.sendErrorMessage(res, 500,
+                                    defaultErrorMessage,
+                                    errorCtrl.getErrorMessage(err));
+                                return;
+                            }
+
+                            let isUsageCode = false;
+                            let key;
+
+                            while (isUsageCode == false) {
+                                isUsageCode = true;
+                                key = generateCode();
+                                for (let i = 0; i < vouchers.length; i++) {
+                                    if (vouchers[i].voucherCode == key) {
+                                        isUsageCode = false;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            Voucher.create({
+                                _userId: req.headers.user_id,
+                                _promotionId: promotion._id,
+                                voucherCode: key,
+                                qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + key
+                            }, (err) => {
+                                if (err)
+                                    errorCtrl.sendErrorMessage(res, 500,
+                                        defaultErrorMessage,
+                                        errorCtrl.getErrorMessage(err));
+                                else {
+                                    promotion.amountRegistered++;
+                                    Promotion.update({_id: promotion._id}, {$set: {
+                                        amountRegistered: promotion.amountRegistered
+                                    }}, (err) => {
+                                        if (err) {
+                                            errorCtrl.sendErrorMessage(res, 500,
+                                                defaultErrorMessage,
+                                                errorCtrl.getErrorMessage(err));
+                                        } else {
+                                            res.status(200).json({
+                                                success: true,
+                                                resultMessage: defaultSuccessMessage,
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                    }
+                }
+            });
         }
     })
 };
