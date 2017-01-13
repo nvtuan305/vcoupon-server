@@ -83,7 +83,7 @@ module.exports.getPromotionInfo = function (req, res) {
 
 module.exports.postNewComment = (req, res) => {
     if (!isValidComment(req.body)) {
-        res.status(400).json({success: false, message: 'Please enter the full information!'});
+        errorCtrl.sendErrorMessage(res, 400, 'Please enter the full information!', []);
     }
     else {
         Promotion.findOne({_id: req.params.promotionId}, function (err, promotion) {
