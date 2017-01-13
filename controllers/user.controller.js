@@ -257,7 +257,7 @@ module.exports.updatePhoneNumber = (req, res) => {
             return errorHandler.sendSystemError(res, err);
 
         if (user)
-            return errorHandler.sendErrorMessage(res, 422, 'Số điện thoại này đang thuộc về người dùng khác', []);
+            return errorHandler.sendErrorMessage(res, 422, 'Số điện thoại này đã được sử dụng', []);
 
         User.findOneAndUpdate({_id: userId}, {$set: {phoneNumber: phoneNumber}}, {new: true}, (err, updatedUser) => {
             if (err)
