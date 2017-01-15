@@ -50,7 +50,7 @@ module.exports.authenticate = (req, res, next) => {
                 return;
             }
 
-            if (user && user.accessToken == accessToken) {
+            if (user) {
                 req.authenticatedUser = {
                     userId: user._id,
                     role: user.role

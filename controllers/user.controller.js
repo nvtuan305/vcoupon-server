@@ -38,34 +38,31 @@ function isValidUser(user) {
  * Remove sensitive info of user. User can't update that
  * @param user
  */
-function removeUserSensitiveInformation(user) {
-    user.accessToken = undefined;
-    user.salt = undefined;
-    user.subscribingTopic = undefined;
-    user.pinnedPromotion = undefined;
-    user.providerId = undefined;
-
-    delete user.promotionCount;
-    delete user.followingCount;
-    delete user.followedCount;
-    delete user.rating;
+function removeNotAllowedInfo(user) {
+    delete user.accessToken;
+    delete user.salt;
+    delete user.subscribingTopic;
+    delete user.pinnedPromotion;
+    delete user.providerId;
+    user.promotionCount = 0;
+    user.followingCount = 0;
+    user.followedCount = 0;
+    user.rating = 0;
 
     return user;
 }
 
 // Save token and response user info
 function responseUserInfo(res, user, token) {
-    user.accessToken = token;
-
-    User.update({_id: user._id}, user, {new: true}, function (err) {
+    User.findOneAndUpdate({_id: user._id}, {$set: {accessToken: token}}, {new: true}, function (err, newUser) {
         if (err) {
-            errorHandler.sendErrorMessage(res, 422,
-                defaultErrorMessage, errorHandler.getErrorMessage(err));
+            errorHandler.sendErrorMessage(res, 422, defaultErrorMessage, errorHandler.getErrorMessage(err));
         } else {
+            console.log(newUser);
             res.status(200).json({
                 success: true,
                 resultMessage: defaultSuccessMessage,
-                user: user.toJSON()
+                user: newUser.toJSON()
             });
         }
     });
@@ -93,7 +90,7 @@ module.exports.signUp = (req, res) => {
         return;
     }
 
-    removeUserSensitiveInformation(req.body);
+    req.body = removeNotAllowedInfo(req.body);
 
     User.findOne({phoneNumber: req.body.phoneNumber}, (err, user) => {
         // Has an error when find user
@@ -110,13 +107,13 @@ module.exports.signUp = (req, res) => {
 
         // Create new account
         else {
-            //let userInfo = removeUserSensitiveInformation(req.body);
+            //let userInfo = removeNotAllowedInfo(req.body);
             User.create(req.body, function (err, user) {
                 if (err || !user) {
                     errorHandler.sendSystemError(res, err);
                 }
                 else {
-                    let token = authController.getAccessToken(user._id, user.phoneNumber);
+                    let token = authController.getAccessToken(user);
                     responseUserInfo(res, user, token);
                 }
             });
@@ -140,29 +137,23 @@ module.exports.signIn = (req, res) => {
     User.findOne({phoneNumber: req.body.phoneNumber},
         function (err, user) {
             // Has an error when find user
-            if (err) {
-                errorHandler.sendSystemError(res, err);
-                return;
-            }
+            if (err)
+                return errorHandler.sendSystemError(res, err);
 
             // Wrong email or password
-            if (!user) {
-                errorHandler.sendErrorMessage(res, 401,
-                    'Số điện thoại này không tồn tại', []);
-            }
-            else {
-                if (user.authenticate(req.body.password)) {
-                    let token = authController.getAccessToken(user);
+            if (!user)
+                return errorHandler.sendErrorMessage(res, 401, 'Số điện thoại này không tồn tại', []);
 
-                    if (token) {
-                        responseUserInfo(res, user, token);
-                    } else {
-                        errorHandler.sendSystemError(res, err);
-                    }
+            if (user.authenticate(req.body.password)) {
+                let token = authController.getAccessToken(user);
+
+                if (token) {
+                    responseUserInfo(res, user, token);
                 } else {
-                    errorHandler.sendErrorMessage(res, 401,
-                        'Sai mật khẩu đăng nhập', []);
+                    errorHandler.sendSystemError(res, err);
                 }
+            } else {
+                errorHandler.sendErrorMessage(res, 401, 'Sai mật khẩu đăng nhập', []);
             }
         });
 };
@@ -173,31 +164,111 @@ module.exports.signIn = (req, res) => {
  * @param res
  */
 module.exports.signInWithFacebook = (req, res) => {
-    let providerId = req.body.providerId;
-    let provider = req.body.provider;
+    let accessToken = req.body.fbAccessToken;
 
-    if (!provider || !providerId) {
-        errorHandler.sendErrorMessage(res, 400, 'Thiếu thông tin đăng nhập', []);
+    if (!accessToken) {
+        errorHandler.sendErrorMessage(res, 400, 'Thiếu thông tin đăng nhập từ Facebook', []);
         return;
     }
 
-    User.findOne({provider: provider, providerId: providerId}, (err, user) => {
+    let https = require('https');
+    https.get(config.facebook.graphUrl + accessToken, (graphRes) => {
+        let resData = '';
+
+        graphRes.on('data', (chunk) => {
+            resData += chunk;
+        });
+
+        graphRes.on('end', () => {
+            let fbUser = JSON.parse(resData);
+            if (fbUser.error) {
+                return res.status(422).json({message: fbUser.error.message});
+            }
+
+            authenticateFacebookUser(fbUser, req, res);
+        })
+    })
+};
+
+// Authenticate facebook user
+function authenticateFacebookUser(fbUser, req, res) {
+    let userFBId = fbUser.id;
+
+    User.findOne({providerId: userFBId, provider: 'facebook'}, (err, user) => {
         if (err) {
-            errorHandler.sendSystemError(res, err);
-            return;
+            return errorHandler.sendSystemError(res, err);
         }
 
-        if (!user) {
-            errorHandler.sendErrorMessage(res, 401, 'Người dùng chưa đăng ký', []);
-            return;
+        if (user) {
+            user.accessToken = authController.getAccessToken(user);
+            return res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                user: user.toJSON()
+            });
         }
 
-        let token = authController.getAccessToken(user._id, user.phoneNumber);
-        if (token) {
-            responseUserInfo(res, user, token);
-        } else {
-            errorHandler.sendSystemError(res, err);
-        }
+        //fields=id,name,email,gender,location,picture.width(200).height(200)&access_token="
+        let newUser = {
+            provider: 'facebook',
+            providerId: fbUser.id,
+            role: 'NORMAL'
+        };
+
+        newUser.email = fbUser.email;
+        newUser.name = fbUser.name;
+        newUser.avatar = fbUser.picture.data.url;
+        newUser.address = fbUser.location || 'Hồ Chí Minh, Việt Nam';
+        newUser.phoneNumber = crypto.randomBytes(16).toString('base64');
+        newUser.password = crypto.randomBytes(16).toString('base64');
+
+        if (fbUser.gender == 'male')
+            newUser.gender = 'Nam';
+        else if (fbUser.gender == 'female')
+            newUser.gender = 'Nữ';
+        else
+            newUser.gender = 'Khác';
+
+        newUser = new User(newUser);
+        newUser.save((err, u) => {
+            if (err) {
+                return errorHandler.sendSystemError(res, err);
+            }
+
+            let accessToken = authController.getAccessToken(u);
+            responseUserInfo(res, u, accessToken);
+        })
+    });
+}
+
+/**
+ * Update user phone number
+ */
+module.exports.updatePhoneNumber = (req, res) => {
+    let userId = req.params.userId;
+    let phoneNumber = req.body.phoneNumber;
+
+    if (!phoneNumber || !userId) {
+        return errorHandler.sendErrorMessage(res, 400, 'Thiếu thông tin', []);
+    }
+
+    User.findOne({phoneNumber: phoneNumber}, (err, user) => {
+        if (err)
+            return errorHandler.sendSystemError(res, err);
+
+        if (user)
+            return errorHandler.sendErrorMessage(res, 422, 'Số điện thoại này đã được sử dụng', []);
+
+        User.findOneAndUpdate({_id: userId}, {$set: {phoneNumber: phoneNumber}}, {new: true}, (err, updatedUser) => {
+            if (err)
+                return errorHandler.sendSystemError(res, err);
+
+            if (!updatedUser)
+                return errorHandler.sendErrorMessage(res, 422, 'Người dùng không tồn tại', []);
+
+            let accessToken = authController.getAccessToken(updatedUser);
+            responseUserInfo(res, updatedUser, accessToken);
+        })
     });
 };
 
@@ -342,12 +413,12 @@ module.exports.updateProfile = (req, res) => {
     }
 
     // Update another user's profile
-    if (req.headers.user_id != req.params.userId) {
+    if (req.authenticatedUser.userId != req.params.userId) {
         errorHandler.sendErrorMessage(res, 400, 'Bạn không thể cập nhật profile của người khác được', []);
         return;
     }
 
-    //let userInfo = removeUserSensitiveInformation(req.body);
+    //let userInfo = removeNotAllowedInfo(req.body);
     User.findOneAndUpdate({_id: req.params.userId}, req.body, {new: true, runValidators: true}, (err, user) => {
         // Has an error when find user
         if (err) {
@@ -580,3 +651,27 @@ module.exports.getVouchers = (req, res) => {
         });
 };
 
+/**
+ * Sign out account
+ */
+module.exports.signOut = (req, res) => {
+
+    User.findOneAndUpdate({_id: req.params.userId}, {$set: {accessToken: ''}}, {new: true}, (err, user) => {
+
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
+
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+        }
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                user: user.toJSON()
+            });
+        }
+    });
+};
