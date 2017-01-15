@@ -21,7 +21,7 @@ module.exports.connect = function () {
     //     }
     // });
 
-    mongoose.connect(config.db.local.uri, function (err) {
+    mongoose.connect(config.db.uri, function (err) {
         if (err) {
             console.error(chalk.red('Could not connect to local database!'));
             console.log(err);
