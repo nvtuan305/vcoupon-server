@@ -49,6 +49,10 @@ router
         authController.authenticate(req, res, next);
     }, (req, res) => {
         promotionController.checkVoucher(req, res);
+    })
+
+    .post('/near-promotion', (req, res) => {
+        promotionController.getNearPromotion(req, res);
     });
 
 module.exports = router;

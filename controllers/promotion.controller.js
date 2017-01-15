@@ -13,7 +13,8 @@ let Promotion = mongoose.model('Promotion'),
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
     commentLimit = 15,
-    promotionLimit = 15;
+    promotionLimit = 15,
+    distanceLimit = 5000; //Tối đa 5km
 
 module.exports.postNewPromotion = function (req, res) {
     if (req.authenticatedUser.role != "PROVIDER")
@@ -211,6 +212,74 @@ module.exports.searchPromotion = (req, res) => {
     })
 };
 
+module.exports.getNearPromotion = (req, res) => {
+    Promotion.find({}).elemMatch('addresses', {
+        "province": req.body.province,
+        "country": req.body.country
+    }).exec((err, promotions) => {
+        if (err)
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
+
+        else if (!promotions || promotions.length == 0)
+            errorCtrl.sendErrorMessage(res, 404,
+                'Không có chương trình khuyến mại nào trong tỉnh/thành phô này', []);
+        else {
+            let listNearPromotions = new Array();
+            for (let i = 0; i < promotions.length; i++) {
+                let newPromotion = JSON.parse(JSON.stringify(promotions[i]));
+                newPromotion.addresses = new Array();
+                //Xét các địa chỉ trong 1 promotion
+                for (let j = 0; j < promotions[i].addresses.length; j++) {
+                    let longPromotion = promotions[i].addresses[j].longitude;
+                    let latPromotion = promotions[i].addresses[j].latitude;
+                    let longUser = req.body.longitude;
+                    let latUser = req.body.latitude;
+                    //Xét khoảng cách của địa điểm đó
+                    if (getDistance(longPromotion, latPromotion, longUser, latUser) <= distanceLimit) {
+                        newPromotion.addresses.push(promotions[i].addresses[j]);
+                    }
+                }
+
+                //Hủy promotion nếu không có địa điểm nào gần user
+                if (newPromotion.addresses.length > 0) {
+                    listNearPromotions.push(newPromotion);
+                }
+            }
+
+            if (listNearPromotions.length == 0) {
+                errorCtrl.sendErrorMessage(res, 404,
+                    'Không có chương trình khuyến mại nào trong bán kính 5km', []);
+            }
+            else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    promotions: listNearPromotions
+                });
+            }
+
+        }
+    });
+};
+
+let rad = function(x) {
+    return x * Math.PI / 180;
+};
+
+function getDistance(longA, latA, longB, latB) {
+    let R = 6378137; // Earth’s mean radius in meter
+    let dLat = rad(latB - latA);
+    let dLong = rad(longB - longA);
+    let a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(rad(latA)) * Math.cos(rad(latB)) *
+        Math.sin(dLong / 2) * Math.sin(dLong / 2);
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    let d = R * c;
+    return d; // returns the distance in meter
+}
+
 module.exports.createVoucher = (req, res) => {
     Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
         if (err) {
@@ -245,8 +314,11 @@ module.exports.createVoucher = (req, res) => {
                         defaultErrorMessage,
                         errorCtrl.getErrorMessage(err));
                 else if (voucher)
-                    errorCtrl.sendErrorMessage(res, 410,
-                        'Bạn đã đăng kí chương trình khuyến mãi này rồi!', []);
+                    res.status(200).json({
+                        success: true,
+                        resultMessage: 'Bạn đã đăng kí chương trình khuyến mãi này rồi!',
+                        voucher: voucher
+                    });
                 else {
                     // Nếu promotion sử dụng mã chung cho tất cả voucher
                     if (promotion.isOneCode == true) {
@@ -255,7 +327,7 @@ module.exports.createVoucher = (req, res) => {
                             _promotion: promotion._id,
                             voucherCode: promotion.voucherCode,
                             qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + promotion.voucherCode
-                        }, (err) => {
+                        }, (err, voucher) => {
                             if (err)
                                 errorCtrl.sendErrorMessage(res, 500,
                                     defaultErrorMessage,
@@ -273,6 +345,7 @@ module.exports.createVoucher = (req, res) => {
                                         res.status(200).json({
                                             success: true,
                                             resultMessage: defaultSuccessMessage,
+                                            voucher: voucher
                                         });
                                     }
                                 });
