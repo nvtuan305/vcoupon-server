@@ -19,9 +19,9 @@ var promotionSchema = new mongoose.Schema({
         ref: 'Category'
     },
 
-    title: {
-        type: String,
-    },
+    title: String,
+
+    titleNormalize: String,
 
     cover: {
         type: String,
@@ -102,10 +102,12 @@ var promotionSchema = new mongoose.Schema({
 // Transform promotion to JSON
 promotionSchema.methods.toJSON = function () {
     var promotion = this.toObject();
+    delete promotion.titleNormalize;
     return promotion;
 };
 
 promotionSchema.pre('save', function (next) {
+    this.titleNormalize = utilCtrl.normalizeString(this.title);
     this.createdAt = utilCtrl.getCurrentDate();
     if (this.isOneCode == true)
         this.voucherCode = utilCtrl.generateCode();

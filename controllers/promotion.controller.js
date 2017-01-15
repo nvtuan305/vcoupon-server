@@ -197,7 +197,7 @@ module.exports.getAllPromotion = (req, res) => {
 };
 
 module.exports.searchPromotion = (req, res) => {
-    Promotion.find({title: {$regex: req.query.search}})
+    Promotion.find({titleNormalize: {$regex: utilCtrl.normalizeString(req.query.search)}})
         .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
         .populate('_provider', 'name avatar address')
         .exec((err, promotions) => {

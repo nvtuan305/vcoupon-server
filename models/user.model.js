@@ -3,7 +3,8 @@
 let mongoose = require('mongoose'),
     crypto = require('crypto');
 
-let config = require('../config/app');
+let config = require('../config/app'),
+    utilCtrl = require('../controllers/util.controller');
 
 let userSchema = new mongoose.Schema({
     name: {
@@ -11,6 +12,8 @@ let userSchema = new mongoose.Schema({
         required: [true, 'Name is required.'],
         default: config.user.defaultName
     },
+
+    nameNormalize: String,
 
     avatar: {
         type: String,
@@ -127,6 +130,7 @@ let userSchema = new mongoose.Schema({
 
 // Hash user's password before saving user
 userSchema.pre('save', function (next) {
+    this.nameNormalize = utilCtrl.normalizeString(this.name);
     if (this.phoneNumber) {
         let User = mongoose.model('User');
 
@@ -162,6 +166,7 @@ userSchema.methods.toJSON = function () {
     delete user.salt;
     delete user.pinnedPromotion;
     delete user.subscribingTopic;
+    delete user.nameNormalize;
     return user;
 };
 

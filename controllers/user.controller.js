@@ -6,7 +6,8 @@ let mongoose = require('mongoose'),
     crypto = require('crypto'),
     authController = require('./authorization.controller.js'),
     errorHandler = require('./error.controller.js'),
-    config = require('../config/development');
+    config = require('../config/development'),
+    utilCtrl = require('./util.controller');
 
 let User = mongoose.model('User'),
     Promotion = mongoose.model('Promotion'),
@@ -47,6 +48,7 @@ function removeNotAllowedInfo(user) {
     delete user.subscribingTopic;
     delete user.pinnedPromotion;
     delete user.providerId;
+    delete user.nameNormalize;
     user.promotionCount = 0;
     user.followingCount = 0;
     user.followedCount = 0;
@@ -624,7 +626,7 @@ module.exports.getAllProviders = (req, res) => {
 module.exports.searchProvider = (req, res) => {
     User.find({
         role: 'PROVIDER',
-        name: {$regex: req.query.search}
+        nameNormalize: {$regex: utilCtrl.normalizeString(req.query.search)}
     }, 'name avatar address')
         .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
         .exec((err, users) => {

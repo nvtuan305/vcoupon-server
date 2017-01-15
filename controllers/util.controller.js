@@ -32,3 +32,18 @@ module.exports.getDistance = (longA, latA, longB, latB) => {
     let d = R * c;
     return d; // returns the distance in meter
 };
+
+module.exports.normalizeString = (input) =>{
+    input = input.toLowerCase();
+    input = input.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a");
+    input = input.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e");
+    input = input.replace(/ì|í|ị|ỉ|ĩ/g,"i");
+    input = input.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o");
+    input = input.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g,"u");
+    input = input.replace(/ỳ|ý|ỵ|ỷ|ỹ/g,"y");
+    input = input.replace(/đ/g,"d");
+    input = input.replace(/!|@|\$|%|\^|\*|\(|\)|\+|\=|\<|\>|\?|\/|,|\.|\:|\'| |\"|\&|\#|\[|\]|~/g,"");
+    input = input.replace(/-+-/g,"");
+    input = input.replace(/^\+|\+$/g,"");
+    return input;
+};
