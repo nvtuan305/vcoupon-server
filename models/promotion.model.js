@@ -72,7 +72,10 @@ var promotionSchema = new mongoose.Schema({
             street: String,
             ward: String,
             district: String,
-            province: String,
+            province: {
+                type: String,
+                default: "Thành phố Hồ Chí Minh"
+            },
             provinceNormalize: {
                 type: String,
                 default: this.province

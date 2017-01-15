@@ -653,9 +653,9 @@ module.exports.getVouchers = (req, res) => {
     Voucher.find({_user: req.params.userId})
         .populate({
             path: '_promotion',
-            select: '_category _provider title commentCount addresses discountType discount endDate startDate condition cover',
+            select: '_provider title commentCount addresses discountType discount endDate startDate condition cover',
             populate: {
-                path: '_provider _category',
+                path: '_provider',
                 select: 'name avatar address'
             }
         })
