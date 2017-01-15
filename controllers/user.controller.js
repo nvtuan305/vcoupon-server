@@ -1,9 +1,12 @@
 'use strict';
 
 let mongoose = require('mongoose'),
+    https = require('https'),
     chalk = require('chalk'),
+    crypto = require('crypto'),
     authController = require('./authorization.controller.js'),
-    errorHandler = require('./error.controller.js');
+    errorHandler = require('./error.controller.js'),
+    config = require('../config/development');
 
 let User = mongoose.model('User'),
     Promotion = mongoose.model('Promotion'),
@@ -62,6 +65,22 @@ function responseUserInfo(res, user, token) {
             res.status(200).json({
                 success: true,
                 resultMessage: defaultSuccessMessage,
+                user: newUser.toJSON()
+            });
+        }
+    });
+}
+
+// Save token and response user info
+function responseFBUserInfo(res, user, token) {
+    User.findOneAndUpdate({_id: user._id}, {$set: {accessToken: token}}, {new: true}, function (err, newUser) {
+        if (err) {
+            errorHandler.sendErrorMessage(res, 422, defaultErrorMessage, errorHandler.getErrorMessage(err));
+        } else {
+            console.log(newUser);
+            res.status(202).json({
+                success: false,
+                resultMessage: 'Người dùng này chưa có số điện thoại',
                 user: newUser.toJSON()
             });
         }
@@ -165,13 +184,13 @@ module.exports.signIn = (req, res) => {
  */
 module.exports.signInWithFacebook = (req, res) => {
     let accessToken = req.body.fbAccessToken;
+    console.log(accessToken);
 
     if (!accessToken) {
         errorHandler.sendErrorMessage(res, 400, 'Thiếu thông tin đăng nhập từ Facebook', []);
         return;
     }
 
-    let https = require('https');
     https.get(config.facebook.graphUrl + accessToken, (graphRes) => {
         let resData = '';
 
@@ -187,7 +206,7 @@ module.exports.signInWithFacebook = (req, res) => {
 
             authenticateFacebookUser(fbUser, req, res);
         })
-    })
+    });
 };
 
 // Authenticate facebook user
@@ -196,19 +215,25 @@ function authenticateFacebookUser(fbUser, req, res) {
 
     User.findOne({providerId: userFBId, provider: 'facebook'}, (err, user) => {
         if (err) {
-            return errorHandler.sendSystemError(res, err);
+            errorHandler.sendSystemError(res, err);
+            return;
         }
 
+        // User has phone number
+        if (user && user.phoneNumber != 'USER_NO_PHONE_NUMBER') {
+            let accessToken = authController.getAccessToken(user);
+            responseUserInfo(res, user, accessToken);
+            return;
+        }
+
+        // If user has no phone number, server will return user phone number that is USER_NO_PHONE_NUMBER string
         if (user) {
-            user.accessToken = authController.getAccessToken(user);
-            return res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                user: user.toJSON()
-            });
+            let accessToken = authController.getAccessToken(user);
+            responseFBUserInfo(res, user, accessToken);
+            return;
         }
 
-        //fields=id,name,email,gender,location,picture.width(200).height(200)&access_token="
+        // fields=id,name,email,gender,location,picture.width(100).height(100)&access_token="
         let newUser = {
             provider: 'facebook',
             providerId: fbUser.id,
@@ -219,7 +244,7 @@ function authenticateFacebookUser(fbUser, req, res) {
         newUser.name = fbUser.name;
         newUser.avatar = fbUser.picture.data.url;
         newUser.address = fbUser.location || 'Hồ Chí Minh, Việt Nam';
-        newUser.phoneNumber = crypto.randomBytes(16).toString('base64');
+        newUser.phoneNumber = 'USER_NO_PHONE_NUMBER';
         newUser.password = crypto.randomBytes(16).toString('base64');
 
         if (fbUser.gender == 'male')
@@ -236,7 +261,7 @@ function authenticateFacebookUser(fbUser, req, res) {
             }
 
             let accessToken = authController.getAccessToken(u);
-            responseUserInfo(res, u, accessToken);
+            responseFBUserInfo(res, u, accessToken);
         })
     });
 }
