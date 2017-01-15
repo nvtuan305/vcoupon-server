@@ -13,7 +13,10 @@ let userSchema = new mongoose.Schema({
         default: config.user.defaultName
     },
 
-    nameNormalize: String,
+    nameNormalize: {
+        type: String,
+        default: this.name
+    },
 
     avatar: {
         type: String,
