@@ -45,7 +45,8 @@ module.exports = {
                 "website": "www.lotteria.vn/",
                 "gender": "Khác",
                 "avatar": "http://www.diachibotui.com/Thumbnail/ExtraLarge/Upload/2015/11/10/lotteria-le-duan-635827458028540625.png",
-                "name": "Lotteria Việt Nam"
+                "name": "Lotteria Việt Nam",
+                "nameNormalize": "lotteriavietnam"
             },
             {
                 "_id": "58525c1cb10aa019d8d66743",
@@ -65,7 +66,8 @@ module.exports = {
                 "website": "www.Grabbike.com",
                 "gender": "Khác",
                 "avatar": "http://grabtaxi.org/wp-content/uploads/2016/07/Grab-Logo.png",
-                "name": "Grabbike"
+                "name": "Grabbike",
+                "nameNormalize": "grabbike"
             },
             {
                 "_id": "58527099fa9a0c19ecc2646c",
@@ -85,7 +87,8 @@ module.exports = {
                 "website": "www.Vascara.com",
                 "gender": "Khác",
                 "avatar": "http://www.trustworld.vn/uploads/logos/xvascaralogo.jpg.pagespeed.ic.V8eewcIEuB.jpg",
-                "name": "Vascara"
+                "name": "Vascara",
+                "nameNormalize": "vascara"
             },
             {
                 "_id": "58525775b10aa019d8d66741",
@@ -105,7 +108,8 @@ module.exports = {
                 "website": "www.vcoupon.vn",
                 "gender": "Nam",
                 "avatar": "http://tinyurl.com/hjcj8ws",
-                "name": "Tú Nhỏ"
+                "name": "Tú Nhỏ",
+                "nameNormalize": "tunho"
             },
             {
                 "_id": "5857eb4b2b61d90011fa90f4",
@@ -122,7 +126,8 @@ module.exports = {
                 "role": "NORMAL",
                 "gender": "Nam",
                 "avatar": "http://tinyurl.com/hjcj8ws",
-                "name": "Việt Trần"
+                "name": "Việt Trần",
+                "nameNormalize": "viettran"
             },
             {
                 "_id": "58770010a093d700117ccf72",
@@ -138,7 +143,8 @@ module.exports = {
                 "subscribingTopic": [],
                 "role": "NORMAL",
                 "avatar": "https://scontent.fdad3-2.fna.fbcdn.net/v/t1.0-9/14595653_777832052355186_3428586939021186220_n.jpg?oh=3c7bb51fb51eebdd8b5f7be53aa1a551&oe=590EC21C",
-                "name": "Tuấn Nguyễn"
+                "name": "Tuấn Nguyễn",
+                "nameNormalize": "tuannguyen"
             },
             {
                 "_id": "58770010a093d700117aaf71",
@@ -154,7 +160,8 @@ module.exports = {
                 "subscribingTopic": [],
                 "role": "NORMAL",
                 "avatar": "https://scontent.fdad3-2.fna.fbcdn.net/v/t1.0-9/14595653_777832052355186_3428586939021186220_n.jpg?oh=3c7bb51fb51eebdd8b5f7be53aa1a551&oe=590EC21C",
-                "name": "Phương Tuấn"
+                "name": "Phương Tuấn",
+                "nameNormalize": "phuongtuan"
             },
             {
                 "_id": "58770010a093d700117aa17f",
@@ -170,7 +177,8 @@ module.exports = {
                 "subscribingTopic": [],
                 "role": "NORMAL",
                 "avatar": "http://s1.img.yan.vn//YanNews/2167221/201502/20150227-092922-4_520x390.jpg",
-                "name": "Quang Tuấn"
+                "name": "Quang Tuấn",
+                "nameNormalize": "quangtuan"
             }
         ],
         promotions: [
@@ -180,6 +188,7 @@ module.exports = {
                 "_category": "5842fbab0f0bc105b77eb74f",
                 "_provider": "58527099fa9a0c19ecc2646c",
                 "title": "Boots Up – Ưu đãi 30% tất cả giày boot",
+                "titleNormalize": "bootsupuudai30tatcagiayboot",
                 "createdAt": 1482219360,
                 "commentCount": 0,
                 "pinnedCount": 0,
@@ -219,6 +228,7 @@ module.exports = {
                 "_category": "5842fbab0f0bc105b77eb74f",
                 "_provider": "58527099fa9a0c19ecc2646c",
                 "title": "Winter Wonderland – Đồng giá sản phẩm từ 150.000đ",
+                "titleNormalize": "winterwonderlanddonggiasanphamtu150000",
                 "createdAt": 1482219360,
                 "commentCount": 0,
                 "pinnedCount": 0,
@@ -258,6 +268,7 @@ module.exports = {
                 "_category": "5842fbab0f0bc105b77eb74f",
                 "_provider": "58527099fa9a0c19ecc2646c",
                 "title": "Grand Opening Vascara Phạm Hùng – Ưu đãi 10% tất cả sản phẩm & giảm thêm 5% khi check-in",
+                "titleNormalize": "grandopeningvascaraphamhunguudai10tatcasanphamgiamthem5khicheckin",
                 "createdAt": 1482219360,
                 "commentCount": 0,
                 "pinnedCount": 0,
@@ -298,6 +309,7 @@ module.exports = {
                 "_category": "5842fbab0f0bc105b77eb74e",
                 "_provider": "585256f1b10aa019d8d66740",
                 "title": "KFC khuyến mại món mới gà zòn húng quế giảm giá món gọi thêm chỉ 1000 đồng",
+                "titleNormalize": "kfckhuyenmaimonmoigazonhungquegiamgiamongoithemchi1000dong",
                 "createdAt": 1482219487,
                 "commentCount": 0,
                 "pinnedCount": 0,
@@ -337,6 +349,7 @@ module.exports = {
                 "_category": "5842fbab0f0bc105b77eb74e",
                 "_provider": "585256f1b10aa019d8d66740",
                 "title": "Sinh nhật vui hơn - Tiết kiệm hơn",
+                "titleNormalize": "sinhnhatvuihontietkiemhon",
                 "createdAt": 1482219487,
                 "commentCount": 0,
                 "pinnedCount": 0,
@@ -376,6 +389,7 @@ module.exports = {
                 "_category": "5842fbab0f0bc105b77eb74e",
                 "_provider": "585256f1b10aa019d8d66740",
                 "title": "Khuyến mãi combo sốc",
+                "titleNormalize": "khuyenmaicombosoc",
                 "createdAt": 1482219487,
                 "commentCount": 0,
                 "pinnedCount": 0,
@@ -416,6 +430,7 @@ module.exports = {
                 "_category": "5842fbab0f0bc105b77eb750",
                 "_provider": "58525c1cb10aa019d8d66743",
                 "title": "Grab Bike tháng 8/2016 – dùng thử 7 ngày miễn phí",
+                "titleNormalize": "grabbikethang82016dungthu7ngaymienphi",
                 "createdAt": 1482219487,
                 "commentCount": 0,
                 "pinnedCount": 0,
@@ -455,6 +470,7 @@ module.exports = {
                 "_category": "5842fbab0f0bc105b77eb750",
                 "_provider": "58525c1cb10aa019d8d66743",
                 "title": "Grab Bike khuyến mãi 10 chuyến đi đầu tiên",
+                "titleNormalize": "grabbikekhuyenmai10chuyendidautien",
                 "createdAt": 1482219487,
                 "commentCount": 0,
                 "pinnedCount": 0,

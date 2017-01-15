@@ -2,7 +2,8 @@
 
 let mongoose = require('mongoose'),
     chalk = require('chalk'),
-    errorCtrl = require('./error.controller.js');
+    errorCtrl = require('./error.controller'),
+    utilCtrl = require('./util.controller');
 
 let Promotion = mongoose.model('Promotion'),
     User = mongoose.model('User'),
@@ -196,7 +197,7 @@ module.exports.getAllPromotion = (req, res) => {
 };
 
 module.exports.searchPromotion = (req, res) => {
-    Promotion.find({title: {$regex: req.query.search}})
+    Promotion.find({titleNormalize: {$regex: utilCtrl.normalizeString(req.query.search)}})
         .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
         .populate('_provider', 'name avatar address')
         .exec((err, promotions) => {
@@ -244,7 +245,7 @@ module.exports.getNearPromotion = (req, res) => {
                     let longUser = req.body.longitude;
                     let latUser = req.body.latitude;
                     //Xét khoảng cách của địa điểm đó
-                    if (getDistance(longPromotion, latPromotion, longUser, latUser) <= distanceLimit) {
+                    if (utilCtrl.getDistance(longPromotion, latPromotion, longUser, latUser) <= distanceLimit) {
                         newPromotion.addresses.push(promotions[i].addresses[j]);
                     }
                 }
@@ -270,22 +271,6 @@ module.exports.getNearPromotion = (req, res) => {
         }
     });
 };
-
-let rad = function(x) {
-    return x * Math.PI / 180;
-};
-
-function getDistance(longA, latA, longB, latB) {
-    let R = 6378137; // Earth’s mean radius in meter
-    let dLat = rad(latB - latA);
-    let dLong = rad(longB - longA);
-    let a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(rad(latA)) * Math.cos(rad(latB)) *
-        Math.sin(dLong / 2) * Math.sin(dLong / 2);
-    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    let d = R * c;
-    return d; // returns the distance in meter
-}
 
 module.exports.createVoucher = (req, res) => {
     Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
@@ -376,7 +361,7 @@ module.exports.createVoucher = (req, res) => {
 
                             while (isUsageCode == false) {
                                 isUsageCode = true;
-                                key = generateCode();
+                                key = utilCtrl.generateCode();
                                 for (let i = 0; i < vouchers.length; i++) {
                                     if (vouchers[i].voucherCode == key) {
                                         isUsageCode = false;
@@ -390,7 +375,7 @@ module.exports.createVoucher = (req, res) => {
                                 _promotion: promotion._id,
                                 voucherCode: key,
                                 qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + key
-                            }, (err) => {
+                            }, (err, voucher) => {
                                 if (err)
                                     errorCtrl.sendErrorMessage(res, 500,
                                         defaultErrorMessage,
@@ -410,6 +395,7 @@ module.exports.createVoucher = (req, res) => {
                                             res.status(200).json({
                                                 success: true,
                                                 resultMessage: defaultSuccessMessage,
+                                                voucher: voucher
                                             });
                                         }
                                     });
@@ -423,15 +409,7 @@ module.exports.createVoucher = (req, res) => {
     })
 };
 
-function generateCode() {
-    let text = "";
-    let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    for (let i = 0; i < 5; i++)
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
-}
 
 module.exports.getAllVouchers = (req, res) => {
     Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
