@@ -3,7 +3,8 @@
  */
 
 var mongoose = require('mongoose'),
-    config = require('../config/app');
+    config = require('../config/app'),
+    utilCtrl = require('../controllers/util.controller');
 
 var ObjectId = mongoose.Schema.ObjectId;
 
@@ -90,7 +91,7 @@ var promotionSchema = new mongoose.Schema({
 
     createdAt: {
         type: Number,
-        default: getCurrentDate()
+        default: utilCtrl.getCurrentDate()
     },
 
     isOneCode: Boolean,
@@ -105,24 +106,10 @@ promotionSchema.methods.toJSON = function () {
 };
 
 promotionSchema.pre('save', function (next) {
-    this.createdAt = getCurrentDate();
+    this.createdAt = utilCtrl.getCurrentDate();
     if (this.isOneCode == true)
-        this.voucherCode = generateCode();
+        this.voucherCode = utilCtrl.generateCode();
     next();
 });
-
-function generateCode() {
-    let text = "";
-    let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-    for(let i = 0; i < 5; i++)
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
-}
-
-function getCurrentDate() {
-    return parseInt(new Date().getTime() / 1000);
-}
 
 mongoose.model('Promotion', promotionSchema);
