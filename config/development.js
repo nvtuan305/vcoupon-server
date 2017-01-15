@@ -514,7 +514,7 @@ module.exports = {
     },
 
     facebook: {
-        graphUrl: "https://graph.facebook.com/me?fields=id,name,email,gender,location,picture.width(200).height(200)&access_token="
+        graphUrl: "https://graph.facebook.com/me?fields=id,name,email,gender,location,picture.width(100).height(100)&access_token="
     }
 };
 
