@@ -21,7 +21,10 @@ var promotionSchema = new mongoose.Schema({
 
     title: String,
 
-    titleNormalize: String,
+    titleNormalize: {
+        type: String,
+        default: this.title
+    },
 
     cover: {
         type: String,
@@ -70,10 +73,18 @@ var promotionSchema = new mongoose.Schema({
             ward: String,
             district: String,
             province: String,
+            provinceNormalize: {
+                type: String,
+                default: this.province
+            },
             latitude: Number,
             country: {
                 type: String,
                 default: "Việt Nam"
+            },
+            countryNormalize: {
+                type: String,
+                default: this.country
             },
             longitude: Number
         }
@@ -108,6 +119,11 @@ promotionSchema.methods.toJSON = function () {
 
 promotionSchema.pre('save', function (next) {
     this.titleNormalize = utilCtrl.normalizeString(this.title);
+    for (let i = 0; i < this.addresses.length; i++)
+    {
+        this.addresses[i].provinceNormalize = utilCtrl.normalizeString(this.addresses[i].province);
+        this.addresses[i].countryNormalize = utilCtrl.normalizeString(this.addresses[i].country);
+    }
     this.createdAt = utilCtrl.getCurrentDate();
     if (this.isOneCode == true)
         this.voucherCode = utilCtrl.generateCode();

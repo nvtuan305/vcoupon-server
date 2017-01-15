@@ -222,8 +222,8 @@ module.exports.searchPromotion = (req, res) => {
 
 module.exports.getNearPromotion = (req, res) => {
     Promotion.find({}).elemMatch('addresses', {
-        "province": req.body.province,
-        "country": req.body.country
+        "provinceNormalize": {$regex: utilCtrl.normalizeString(req.body.province)},
+        "countryNormalize": {$regex: utilCtrl.normalizeString(req.body.country)}
     }).exec((err, promotions) => {
         if (err)
             errorCtrl.sendErrorMessage(res, 500,
