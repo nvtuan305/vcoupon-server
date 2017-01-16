@@ -224,7 +224,9 @@ module.exports.getNearPromotion = (req, res) => {
     Promotion.find({}).elemMatch('addresses', {
         "provinceNormalize": {$regex: utilCtrl.normalizeString(req.body.province)},
         "countryNormalize": {$regex: utilCtrl.normalizeString(req.body.country)}
-    }).exec((err, promotions) => {
+    })
+        .populate('_provider', 'name avatar address')
+        .exec((err, promotions) => {
         if (err)
             errorCtrl.sendErrorMessage(res, 500,
                 defaultErrorMessage,
