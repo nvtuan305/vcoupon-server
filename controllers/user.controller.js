@@ -593,6 +593,11 @@ module.exports.getPinnedPromotion = (req, res) => {
                 path: '_provider',
                 select: 'avatar name address'
             }, (err, promotions) => {
+                //Arrange list promotions in endDate order
+                promotions.sort(function (a, b) {
+                    return (a.endDate < b.endDate) ? 1 : -1;
+                });
+
                 res.status(200).json({
                     success: true,
                     resultMessage: defaultSuccessMessage,
@@ -669,6 +674,11 @@ module.exports.getVouchers = (req, res) => {
                 errorHandler.sendErrorMessage(res, 404,
                     'Bạn chưa đăng kí voucher nào!', []);
             else {
+                //Arrange list vouchers in registeredDate order
+                vouchers.sort(function (a, b) {
+                    return (a.registeredDate < b.registeredDate) ? 1 : -1;
+                });
+
                 res.status(200).json({
                     success: true,
                     resultMessage: defaultSuccessMessage,

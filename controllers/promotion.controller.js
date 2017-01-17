@@ -159,7 +159,7 @@ module.exports.getAllComments = (req, res) => {
                 else {
                     //Arrange list promotion in createdAt order
                     comments.sort(function (a, b) {
-                        return (a.createdAt < b.createdAt) ? -1 : 1;
+                        return (a.createdAt < b.createdAt) ? 1 : -1;
                     });
                     res.status(200).json({
                         success: true,
@@ -173,7 +173,9 @@ module.exports.getAllComments = (req, res) => {
 };
 
 module.exports.getAllPromotion = (req, res) => {
-    Promotion.find({})
+    Promotion.find({
+        endDate: { $lt: utilCtrl.getCurrentDate() }
+    })
         .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
         .populate('_provider', 'name avatar address')
         .exec((err, promotions) => {
@@ -187,6 +189,11 @@ module.exports.getAllPromotion = (req, res) => {
                     'Không có chương trình khuyến mại nào', []);
 
             else {
+                //Arrange list promotions in endDate order
+                promotions.sort(function (a, b) {
+                    return (a.endDate < b.endDate) ? 1 : -1;
+                });
+
                 res.status(200).json({
                     success: true,
                     resultMessage: defaultSuccessMessage,
@@ -211,6 +218,11 @@ module.exports.searchPromotion = (req, res) => {
                     'Không có chương trình khuyến mại nào', []);
 
             else {
+                //Arrange list promotions in endDate order
+                promotions.sort(function (a, b) {
+                    return (a.endDate < b.endDate) ? 1 : -1;
+                });
+
                 res.status(200).json({
                     success: true,
                     resultMessage: defaultSuccessMessage,
@@ -221,7 +233,7 @@ module.exports.searchPromotion = (req, res) => {
 };
 
 module.exports.getNearPromotion = (req, res) => {
-    Promotion.find({}).elemMatch('addresses', {
+    Promotion.find({ endDate: { $gt: utilCtrl.getCurrentDate() }}).elemMatch('addresses', {
         "provinceNormalize": {$regex: utilCtrl.normalizeString(req.body.province)},
         "countryNormalize": {$regex: utilCtrl.normalizeString(req.body.country)}
     })
@@ -440,6 +452,11 @@ module.exports.getAllVouchers = (req, res) => {
                             'Chưa có voucher nào', []);
                     }
                     else {
+                        //Arrange list vouchers in registeredDate order
+                        vouchers.sort(function (a, b) {
+                            return (a.registeredDate < b.registeredDate) ? 1 : -1;
+                        });
+
                         res.status(200).json({
                             success: true,
                             resultMessage: defaultSuccessMessage,

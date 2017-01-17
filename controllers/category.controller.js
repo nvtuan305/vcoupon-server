@@ -53,9 +53,9 @@ module.exports.getAllPromotions = (req, res) => {
                 'Không có Promotion nào', []);
         }
         else {
-            //Arrange list promotions in createAt order
+            //Arrange list promotions in endDate order
             promotions.sort(function (a, b) {
-                return (a.createAt < b.createAt) ? -1 : 1;
+                return (a.endDate < b.endDate) ? 1 : -1;
             });
             res.status(200).json({
                 success: true,
