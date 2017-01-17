@@ -57,6 +57,14 @@ function removeNotAllowedInfo(user) {
     return user;
 }
 
+function removeNotAllowedInfoWhenUpdateProfile(user) {
+    user = removeNotAllowedInfo(user);
+    delete user.password;
+    delete user.phoneNumber;
+
+    return user;
+}
+
 // Save token and response user info
 function responseUserInfo(res, user, token) {
     User.findOneAndUpdate({_id: user._id}, {$set: {accessToken: token}}, {new: true}, function (err, newUser) {
@@ -455,7 +463,7 @@ module.exports.unfollowPromotionProvider = (req, res) => {
  */
 module.exports.updateProfile = (req, res) => {
     // Check request data
-    if (!req.body.phoneNumber || !req.params.userId) {
+    if (!req.params.userId) {
         errorHandler.sendErrorMessage(res, 400, 'Bạn chưa điền đầy đủ thông tin', []);
         return;
     }
@@ -466,7 +474,7 @@ module.exports.updateProfile = (req, res) => {
         return;
     }
 
-    //let userInfo = removeNotAllowedInfo(req.body);
+    req.body = removeNotAllowedInfoWhenUpdateProfile(req.body);
     User.findOneAndUpdate({_id: req.params.userId}, req.body, {new: true, runValidators: true}, (err, user) => {
         // Has an error when find user
         if (err) {
