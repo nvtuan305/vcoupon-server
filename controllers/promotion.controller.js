@@ -293,7 +293,7 @@ module.exports.createVoucher = (req, res) => {
             errorCtrl.sendErrorMessage(res, 416,
                 'Đã hết số lượng mã', []);
         }
-        else if (promotion._provider == req.headers.user_id) {
+        else if (promotion._provider == req.authenticatedUser.userId) {
             errorCtrl.sendErrorMessage(res, 416,
                 'Bạn không thể nhận mã voucher trong chương trình khuyến mãi của bạn', []);
         }
@@ -301,7 +301,7 @@ module.exports.createVoucher = (req, res) => {
             //Xét đã đăng kí voucher chưa
             Voucher.findOne({
                 _promotion: promotion._id,
-                _user: req.headers.user_id
+                _user: req.authenticatedUser.userId
             }, (err, voucher) => {
                 if (err)
                     errorCtrl.sendErrorMessage(res, 500,
@@ -317,7 +317,7 @@ module.exports.createVoucher = (req, res) => {
                     // Nếu promotion sử dụng mã chung cho tất cả voucher
                     if (promotion.isOneCode == true) {
                         Voucher.create({
-                            _user: req.headers.user_id,
+                            _user: req.authenticatedUser.userId,
                             _promotion: promotion._id,
                             voucherCode: promotion.voucherCode,
                             qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + promotion.voucherCode
@@ -373,7 +373,7 @@ module.exports.createVoucher = (req, res) => {
                             }
 
                             Voucher.create({
-                                _user: req.headers.user_id,
+                                _user: req.authenticatedUser.userId,
                                 _promotion: promotion._id,
                                 voucherCode: key,
                                 qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + key
@@ -422,7 +422,7 @@ module.exports.getAllVouchers = (req, res) => {
         else if (!promotion)
             errorCtrl.sendErrorMessage(res, 404,
                 'Chương trình khuyến mãi này không tồn tại', []);
-        else if (promotion._provider != req.headers.user_id)
+        else if (promotion._provider != req.authenticatedUser.userId)
             errorCtrl.sendErrorMessage(res, 410,
                 'Chương trình khuyến mãi này không phải của bạn', []);
         else {
@@ -460,7 +460,7 @@ module.exports.checkVoucher = (req, res) => {
         else if (!promotion)
             errorCtrl.sendErrorMessage(res, 404,
                 'Chương trình khuyến mãi này không tồn tại', []);
-        else if (promotion._provider != req.headers.user_id)
+        else if (promotion._provider != req.authenticatedUser.userId)
             errorCtrl.sendErrorMessage(res, 410,
                 'Chương trình khuyến mãi này không phải của bạn', []);
         else {
