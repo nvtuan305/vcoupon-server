@@ -62,6 +62,12 @@ router
         userController.followPromotionProvider(req, res);
     })
 
+    .get('/:userId/follows', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        userController.getFollows(req, res);
+    })
+
     // Unfollow an promotion provider or promotion category
     .delete('/:userId/follows/:publisherId', (req, res, next) => {
         authController.authenticate(req, res, next);

@@ -376,6 +376,27 @@ module.exports.followPromotionProvider = (req, res) => {
     });
 };
 
+module.exports.getFollows = (req, res) => {
+    User.findOne({_id: req.params.userId}, (err, user) => {
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
+
+        // User not found
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            resultMessage: defaultSuccessMessage,
+            subscribingTopic: user.subscribingTopic
+        });
+    });
+};
+
 /**
  * Unfollow a promotion provider or promotion category
  * @param req
