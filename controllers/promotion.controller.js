@@ -360,13 +360,7 @@ module.exports.createVoucher = (req, res) => {
                         defaultErrorMessage,
                         errorCtrl.getErrorMessage(err));
                 else if (voucher) {
-                    delete voucher._promotion;
-                    delete voucher._user;
-                    res.status(200).json({
-                        success: true,
-                        resultMessage: 'Bạn đã đăng kí chương trình khuyến mãi này rồi!',
-                        voucher: voucher
-                    });
+                    sendResponseCreateVoucher(voucher, res);
                 }
                 else {
                     // Nếu promotion sử dụng mã chung cho tất cả voucher
@@ -393,13 +387,7 @@ module.exports.createVoucher = (req, res) => {
                                             defaultErrorMessage,
                                             errorCtrl.getErrorMessage(err));
                                     } else {
-                                        delete voucher._promotion;
-                                        delete voucher._user;
-                                        res.status(200).json({
-                                            success: true,
-                                            resultMessage: defaultSuccessMessage,
-                                            voucher: voucher
-                                        });
+                                        sendResponseCreateVoucher(voucher, res);
                                     }
                                 });
                             }
@@ -451,11 +439,7 @@ module.exports.createVoucher = (req, res) => {
                                                 defaultErrorMessage,
                                                 errorCtrl.getErrorMessage(err));
                                         } else {
-                                            res.status(200).json({
-                                                success: true,
-                                                resultMessage: defaultSuccessMessage,
-                                                voucher: voucher
-                                            });
+                                            sendResponseCreateVoucher(voucher, res);
                                         }
                                     });
                                 }
@@ -468,7 +452,16 @@ module.exports.createVoucher = (req, res) => {
     })
 };
 
-
+function sendResponseCreateVoucher(voucher, response) {
+    let v = voucher.toObject();
+    delete v._promotion;
+    delete v._user;
+    response.status(200).json({
+        success: true,
+        resultMessage: 'Bạn đã đăng kí chương trình khuyến mãi này rồi!',
+        voucher: v
+    });
+}
 
 module.exports.getAllVouchers = (req, res) => {
     Promotion.findOne({_id: req.params.promotionId}, (err, promotion) => {
