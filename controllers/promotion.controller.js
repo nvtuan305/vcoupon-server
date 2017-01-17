@@ -1,6 +1,8 @@
 "use strict";
 
 let mongoose = require('mongoose'),
+    querystring = require('querystring'),
+    http = require("http"),
     chalk = require('chalk'),
     errorCtrl = require('./error.controller'),
     utilCtrl = require('./util.controller');
@@ -40,7 +42,7 @@ module.exports.postNewPromotion = function (req, res) {
             return;
         }
 
-        Promotion.create(removeRedundant(req.body), function (err) {
+        Promotion.create(removeRedundant(req.body), function (err, promotion) {
             if (err) {
                 console.error(chalk.bgRed('Init promotion failed!'));
                 console.log(err);
@@ -53,7 +55,7 @@ module.exports.postNewPromotion = function (req, res) {
                             promotionCount: user.promotionCount
                         }
                     },
-                    {runValidators: true, override: true}, function (err) {
+                    {runValidators: true, override: true}, function (err, user) {
                         if (err) {
                             errorCtrl.sendErrorMessage(res, 404,
                                 defaultErrorMessage,
@@ -63,7 +65,45 @@ module.exports.postNewPromotion = function (req, res) {
                                 success: true,
                                 resultMessage: 'Đăng tải chương trình khuyến mãi thành công!'
                             });
+
                             res.send();
+
+                            var post_category = querystring.stringify({
+                                'to' : '/topics/CATEGORY_' + promotion._category,
+                                'data' : {
+                                    "title" : "Khuyến mãi mới từ " + user.name,
+                                    "message" : promotion.title
+                                }
+                            });
+
+                            var post_provider = querystring.stringify({
+                                'to' : '/topics/PROVIDER_' + promotion._provider,
+                                'data' : {
+                                    "title" : "Khuyến mãi mới từ " + user.name,
+                                    "message" : promotion.title
+                                }
+                            });
+
+                            // An object of options to indicate where to post to
+                            var post_options = {
+                                url: 'https://fcm.googleapis.com/fcm/send',
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'key=AIzaSyAUqNvGIF1RJoSW0Mu9EouzZqW1YjxMEDc'
+                                }
+                            };
+
+                            var post_req = http.request(post_options, function(res) {
+                                res.setEncoding('utf8');
+                                res.on('data', function (chunk) {
+                                    console.log('Response: ' + chunk);
+                                });
+                            });
+
+                            post_req.write(post_category);
+                            post_req.write(post_provider);
+                            post_req.end();
                         }
                     });
             }
@@ -319,12 +359,15 @@ module.exports.createVoucher = (req, res) => {
                     errorCtrl.sendErrorMessage(res, 500,
                         defaultErrorMessage,
                         errorCtrl.getErrorMessage(err));
-                else if (voucher)
+                else if (voucher) {
+                    delete voucher._promotion;
+                    delete voucher._user;
                     res.status(200).json({
                         success: true,
                         resultMessage: 'Bạn đã đăng kí chương trình khuyến mãi này rồi!',
                         voucher: voucher
                     });
+                }
                 else {
                     // Nếu promotion sử dụng mã chung cho tất cả voucher
                     if (promotion.isOneCode == true) {
@@ -350,6 +393,8 @@ module.exports.createVoucher = (req, res) => {
                                             defaultErrorMessage,
                                             errorCtrl.getErrorMessage(err));
                                     } else {
+                                        delete voucher._promotion;
+                                        delete voucher._user;
                                         res.status(200).json({
                                             success: true,
                                             resultMessage: defaultSuccessMessage,
