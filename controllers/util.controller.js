@@ -47,3 +47,12 @@ module.exports.normalizeString = (input) =>{
     input = input.replace(/^\+|\+$/g,"");
     return input;
 };
+
+module.exports.isInArray = (array, id) => {
+    for (let i = 0; i < array.length; i++) {
+        if (array[i].equals(id)) {
+            return true;
+        }
+    }
+    return false;
+};

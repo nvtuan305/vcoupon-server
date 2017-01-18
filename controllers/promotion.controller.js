@@ -16,7 +16,7 @@ let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
     commentLimit = 15,
     promotionLimit = 15,
-    distanceLimit = 5000; //Tối đa 5km
+    distanceLimit = 10000; //Tối đa 5km
 
 module.exports.postNewPromotion = function (req, res) {
     if (req.authenticatedUser.role != "PROVIDER") {
@@ -68,18 +68,18 @@ module.exports.postNewPromotion = function (req, res) {
                             res.send();
 
                             let body_category = JSON.stringify({
-                                'to' : '/topics/CATEGORY_' + promotion._category,
-                                'data' : {
-                                    'title' : "Khuyến mãi mới từ " + user.name,
-                                    'message' : promotion.title
+                                'to': '/topics/CATEGORY_' + promotion._category,
+                                'data': {
+                                    'title': "Khuyến mãi mới từ " + user.name,
+                                    'message': promotion.title
                                 }
                             });
 
                             let body_provider = JSON.stringify({
-                                'to' : '/topics/PROVIDER_' + promotion._provider,
-                                'data' : {
-                                    'title' : 'Khuyến mãi mới từ ' + user.name,
-                                    'message' : promotion.title
+                                'to': '/topics/PROVIDER_' + promotion._provider,
+                                'data': {
+                                    'title': 'Khuyến mãi mới từ ' + user.name,
+                                    'message': promotion.title
                                 }
                             });
 
@@ -105,7 +105,7 @@ function sendNotification(req_body) {
         }
     };
 
-    let post = https.request(post_options, function(res) {
+    let post = https.request(post_options, function (res) {
         res.setEncoding('utf8');
         res.on('data', function (chunk) {
             console.log('Response: ' + chunk);
@@ -117,16 +117,35 @@ function sendNotification(req_body) {
 }
 
 module.exports.getPromotionInfo = function (req, res) {
-    Promotion.findOne({_id: req.params.promotionId}, function (err, promotion) {
-        if (err || !promotion) {
-            errorCtrl.sendErrorMessage(res, 404,
-                'Chương trình khuyến mãi này không tồn tại', []);
+    User.findOne({_id: req.authenticatedUser.userId}, (err, user) => {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
         }
+        else if (!user)
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
         else {
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                promotion: promotion.toJSON()
+            Promotion.findOne({_id: req.params.promotionId}, function (err, promotion) {
+                if (err)
+                    errorCtrl.sendErrorMessage(res, 500,
+                        defaultErrorMessage,
+                        errorCtrl.getErrorMessage(err));
+                else if (!promotion) {
+                    errorCtrl.sendErrorMessage(res, 404,
+                        'Chương trình khuyến mãi này không tồn tại', []);
+                }
+                else {
+                    promotion = promotion.toObject();
+                    promotion.isPinned = utilCtrl.isInArray(user.pinnedPromotion, promotion._id);
+                    promotion.isRegistered = utilCtrl.isInArray(user.registeredPromotion, promotion._id);
+
+                    res.status(200).json({
+                        success: true,
+                        resultMessage: defaultSuccessMessage,
+                        promotion: promotion
+                    });
+                }
             });
         }
     });
@@ -217,115 +236,165 @@ module.exports.getAllComments = (req, res) => {
 };
 
 module.exports.getAllPromotion = (req, res) => {
-    Promotion.find({
-        endDate: { $lt: utilCtrl.getCurrentDate() }
-    })
-        .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
-        .populate('_provider', 'name avatar address')
-        .exec((err, promotions) => {
-            if (err)
-                errorCtrl.sendErrorMessage(res, 500,
-                    defaultErrorMessage,
-                    errorCtrl.getErrorMessage(err));
-
-            else if (!promotions)
-                errorCtrl.sendErrorMessage(res, 404,
-                    'Không có chương trình khuyến mại nào', []);
-
-            else {
-                //Arrange list promotions in endDate order
-                promotions.sort(function (a, b) {
-                    return (a.endDate < b.endDate) ? 1 : -1;
-                });
-
-                res.status(200).json({
-                    success: true,
-                    resultMessage: defaultSuccessMessage,
-                    promotions: promotions
-                });
-            }
-        })
-};
-
-module.exports.searchPromotion = (req, res) => {
-    Promotion.find({titleNormalize: {$regex: utilCtrl.normalizeString(req.query.search)}})
-        .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
-        .populate('_provider', 'name avatar address')
-        .exec((err, promotions) => {
-            if (err)
-                errorCtrl.sendErrorMessage(res, 500,
-                    defaultErrorMessage,
-                    errorCtrl.getErrorMessage(err));
-
-            else if (!promotions)
-                errorCtrl.sendErrorMessage(res, 404,
-                    'Không có chương trình khuyến mại nào', []);
-
-            else {
-                //Arrange list promotions in endDate order
-                promotions.sort(function (a, b) {
-                    return (a.endDate < b.endDate) ? 1 : -1;
-                });
-
-                res.status(200).json({
-                    success: true,
-                    resultMessage: defaultSuccessMessage,
-                    promotions: promotions
-                });
-            }
-        })
-};
-
-module.exports.getNearPromotion = (req, res) => {
-    Promotion.find({ endDate: { $gt: utilCtrl.getCurrentDate() }}).elemMatch('addresses', {
-        "provinceNormalize": {$regex: utilCtrl.normalizeString(req.body.province)},
-        "countryNormalize": {$regex: utilCtrl.normalizeString(req.body.country)}
-    })
-        .populate('_provider', 'name avatar address')
-        .exec((err, promotions) => {
-        if (err)
+    User.findOne({_id: req.authenticatedUser.userId}, (err, user) => {
+        if (err) {
             errorCtrl.sendErrorMessage(res, 500,
                 defaultErrorMessage,
                 errorCtrl.getErrorMessage(err));
-
-        else if (!promotions || promotions.length == 0)
-            errorCtrl.sendErrorMessage(res, 404,
-                'Không có chương trình khuyến mại nào trong tỉnh/thành phô này', []);
+        }
+        else if (!user)
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
         else {
-            let listNearPromotions = new Array();
-            for (let i = 0; i < promotions.length; i++) {
-                let newPromotion = JSON.parse(JSON.stringify(promotions[i]));
-                newPromotion.addresses = new Array();
-                //Xét các địa chỉ trong 1 promotion
-                for (let j = 0; j < promotions[i].addresses.length; j++) {
-                    let longPromotion = promotions[i].addresses[j].longitude;
-                    let latPromotion = promotions[i].addresses[j].latitude;
-                    let longUser = req.body.longitude;
-                    let latUser = req.body.latitude;
-                    //Xét khoảng cách của địa điểm đó
-                    if (utilCtrl.getDistance(longPromotion, latPromotion, longUser, latUser) <= distanceLimit) {
-                        newPromotion.addresses.push(promotions[i].addresses[j]);
+            Promotion.find({
+                endDate: {$lt: utilCtrl.getCurrentDate()}
+            })
+                .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
+                .populate('_provider', 'name avatar address')
+                .exec((err, promotions) => {
+                    if (err)
+                        errorCtrl.sendErrorMessage(res, 500,
+                            defaultErrorMessage,
+                            errorCtrl.getErrorMessage(err));
+
+                    else if (!promotions)
+                        errorCtrl.sendErrorMessage(res, 404,
+                            'Không có chương trình khuyến mại nào', []);
+
+                    else {
+                        for (let i = 0; i < promotions.length; i++) {
+                            promotions[i] = promotions[i].toObject();
+                            promotions[i].isPinned = utilCtrl.isInArray(user.pinnedPromotion, promotions[i]._id);
+                            promotions[i].isRegistered = utilCtrl.isInArray(user.registeredPromotion, promotions[i]._id);
+                        }
+
+                        //Arrange list promotions in endDate order
+                        promotions.sort(function (a, b) {
+                            return (a.endDate < b.endDate) ? 1 : -1;
+                        });
+
+                        res.status(200).json({
+                            success: true,
+                            resultMessage: defaultSuccessMessage,
+                            promotions: promotions
+                        });
                     }
-                }
+                })
+        }
+    });
+};
 
-                //Hủy promotion nếu không có địa điểm nào gần user
-                if (newPromotion.addresses.length > 0) {
-                    listNearPromotions.push(newPromotion);
-                }
-            }
+module.exports.searchPromotion = (req, res) => {
+    User.findOne({_id: req.authenticatedUser.userId}, (err, user) => {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
+        }
+        else if (!user)
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+        else {
+            Promotion.find({titleNormalize: {$regex: utilCtrl.normalizeString(req.query.search)}})
+                .skip((req.query.page - 1) * promotionLimit).limit(promotionLimit)
+                .populate('_provider', 'name avatar address')
+                .exec((err, promotions) => {
+                    if (err)
+                        errorCtrl.sendErrorMessage(res, 500,
+                            defaultErrorMessage,
+                            errorCtrl.getErrorMessage(err));
 
-            if (listNearPromotions.length == 0) {
-                errorCtrl.sendErrorMessage(res, 404,
-                    'Không có chương trình khuyến mại nào trong bán kính 5km', []);
-            }
-            else {
-                res.status(200).json({
-                    success: true,
-                    resultMessage: defaultSuccessMessage,
-                    promotions: listNearPromotions
+                    else if (!promotions)
+                        errorCtrl.sendErrorMessage(res, 404,
+                            'Không có chương trình khuyến mại nào', []);
+
+                    else {
+                        for (let i = 0; i < promotions.length; i++) {
+                            promotions[i] = promotions[i].toObject();
+                            promotions[i].isPinned = utilCtrl.isInArray(user.pinnedPromotion, promotions[i]._id);
+                            promotions[i].isRegistered = utilCtrl.isInArray(user.registeredPromotion, promotions[i]._id);
+                        }
+
+                        //Arrange list promotions in endDate order
+                        promotions.sort(function (a, b) {
+                            return (a.endDate < b.endDate) ? 1 : -1;
+                        });
+
+                        res.status(200).json({
+                            success: true,
+                            resultMessage: defaultSuccessMessage,
+                            promotions: promotions
+                        });
+                    }
+                })
+        }
+    });
+};
+
+module.exports.getNearPromotion = (req, res) => {
+    User.findOne({_id: req.authenticatedUser.userId}, (err, user) => {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
+        }
+        else if (!user)
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+        else {
+            Promotion.find({endDate: {$gt: utilCtrl.getCurrentDate()}}).elemMatch('addresses', {
+                "provinceNormalize": {$regex: utilCtrl.normalizeString(req.body.province)},
+                "countryNormalize": {$regex: utilCtrl.normalizeString(req.body.country)}
+            })
+                .populate('_provider', 'name avatar address')
+                .exec((err, promotions) => {
+                    if (err)
+                        errorCtrl.sendErrorMessage(res, 500,
+                            defaultErrorMessage,
+                            errorCtrl.getErrorMessage(err));
+
+                    else if (!promotions || promotions.length == 0)
+                        errorCtrl.sendErrorMessage(res, 404,
+                            'Không có chương trình khuyến mại nào trong tỉnh/thành phô này', []);
+                    else {
+                        let listNearPromotions = new Array();
+                        for (let i = 0; i < promotions.length; i++) {
+                            let newPromotion = JSON.parse(JSON.stringify(promotions[i]));
+                            newPromotion.addresses = new Array();
+                            //Xét các địa chỉ trong 1 promotion
+                            for (let j = 0; j < promotions[i].addresses.length; j++) {
+                                let longPromotion = promotions[i].addresses[j].longitude;
+                                let latPromotion = promotions[i].addresses[j].latitude;
+                                let longUser = req.body.longitude;
+                                let latUser = req.body.latitude;
+                                //Xét khoảng cách của địa điểm đó
+                                if (utilCtrl.getDistance(longPromotion, latPromotion, longUser, latUser) <= distanceLimit) {
+                                    newPromotion.addresses.push(promotions[i].addresses[j]);
+                                }
+                            }
+
+                            //Hủy promotion nếu không có địa điểm nào gần user
+                            if (newPromotion.addresses.length > 0) {
+                                listNearPromotions.push(newPromotion);
+                            }
+                        }
+
+                        if (listNearPromotions.length == 0) {
+                            errorCtrl.sendErrorMessage(res, 404,
+                                'Không có chương trình khuyến mại nào trong bán kính 5km', []);
+                        }
+                        else {
+                            for (let i = 0; i < listNearPromotions.length; i++) {
+                                listNearPromotions[i].isPinned = utilCtrl.isInArray(user.pinnedPromotion, promotions[i]._id);
+                                listNearPromotions[i].isRegistered = utilCtrl.isInArray(user.registeredPromotion, promotions[i]._id);
+                            }
+
+                            res.status(200).json({
+                                success: true,
+                                resultMessage: defaultSuccessMessage,
+                                promotions: listNearPromotions
+                            });
+                        }
+
+                    }
                 });
-            }
-
         }
     });
 };
@@ -391,7 +460,18 @@ module.exports.createVoucher = (req, res) => {
                                             defaultErrorMessage,
                                             errorCtrl.getErrorMessage(err));
                                     } else {
-                                        sendResponseCreateVoucher(voucher, res);
+                                        User.update({_id: req.authenticatedUser.userId}, {
+                                            $push: {
+                                                registeredPromotion: promotion,
+                                            }
+                                        }, (err) => {
+                                            if (err)
+                                                errorCtrl.sendErrorMessage(res, 500,
+                                                    defaultErrorMessage,
+                                                    errorCtrl.getErrorMessage(err));
+                                            else
+                                                sendResponseCreateVoucher(voucher, res);
+                                        });
                                     }
                                 });
                             }
@@ -443,7 +523,18 @@ module.exports.createVoucher = (req, res) => {
                                                 defaultErrorMessage,
                                                 errorCtrl.getErrorMessage(err));
                                         } else {
-                                            sendResponseCreateVoucher(voucher, res);
+                                            User.update({_id: req.authenticatedUser.userId}, {
+                                                $push: {
+                                                    registeredPromotion: promotion,
+                                                }
+                                            }, (err) => {
+                                                if (err)
+                                                    errorCtrl.sendErrorMessage(res, 500,
+                                                        defaultErrorMessage,
+                                                        errorCtrl.getErrorMessage(err));
+                                                else
+                                                    sendResponseCreateVoucher(voucher, res);
+                                            });
                                         }
                                     });
                                 }
@@ -462,7 +553,7 @@ function sendResponseCreateVoucher(voucher, response) {
     delete v._user;
     response.status(200).json({
         success: true,
-        resultMessage: 'Bạn đã đăng kí chương trình khuyến mãi này rồi!',
+        resultMessage: defaultSuccessMessage,
         voucher: v
     });
 }

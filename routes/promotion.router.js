@@ -12,7 +12,9 @@ router
        promotionController.postNewPromotion(req, res);
     })
 
-    .get('/:promotionId', (req, res) => {
+    .get('/:promotionId', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
        promotionController.getPromotionInfo(req, res);
     })
 
@@ -26,7 +28,9 @@ router
         promotionController.getAllComments(req, res);
     })
 
-    .get('/', (req, res) => {
+    .get('/', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
         if (req.query.search == undefined || req.query.search == "")
             promotionController.getAllPromotion(req, res);
         else
@@ -51,7 +55,9 @@ router
         promotionController.checkVoucher(req, res);
     })
 
-    .post('/near-promotion', (req, res) => {
+    .post('/near-promotion', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
         promotionController.getNearPromotion(req, res);
     });
 
