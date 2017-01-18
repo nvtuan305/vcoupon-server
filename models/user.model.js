@@ -97,6 +97,14 @@ let userSchema = new mongoose.Schema({
         }
     ],
 
+    registeredPromotion: [
+        {
+            type: mongoose.Schema.ObjectId,
+            ref: 'Promotion',
+            unique: true
+        }
+    ],
+
     pinnedPromotion: [
         {
             type: mongoose.Schema.ObjectId,
@@ -168,6 +176,7 @@ userSchema.methods.toJSON = function () {
     delete user.password;
     delete user.salt;
     delete user.pinnedPromotion;
+    delete user.registeredPromotion;
     delete user.subscribingTopic;
     delete user.nameNormalize;
     return user;

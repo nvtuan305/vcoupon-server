@@ -2,11 +2,14 @@
 
 let mongoose = require('mongoose'),
     chalk = require('chalk'),
-    errorCtrl = require('./error.controller');
+    errorCtrl = require('./error.controller'),
+    utilCtrl = require('./util.controller');
 
 
-let Category = mongoose.model('Category');
-let Promotion = mongoose.model('Promotion');
+let Category = mongoose.model('Category'),
+    Promotion = mongoose.model('Promotion'),
+    User = mongoose.model('User'),
+    Voucher = mongoose.model('Voucher');
 
 // Define default response message
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
@@ -46,25 +49,44 @@ module.exports.addSampleData = function (req, res) {
 //Get all promotions in category
 module.exports.getAllPromotions = (req, res) => {
     let limit = 10;
-    Promotion.find({_category: req.params.categoryId}).skip((req.query.page - 1) * limit).limit(limit)
-        .populate('_provider', 'name avatar email phoneNumber address website fanpage rating').exec(function(err, promotions) {
-        if (err || !promotions) {
-            errorCtrl.sendErrorMessage(res, 404,
-                'Không có Promotion nào', []);
+    User.findOne({_id: req.authenticatedUser.userId}, (err, user) => {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
         }
+        else if (!user)
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
         else {
-            //Arrange list promotions in endDate order
-            promotions.sort(function (a, b) {
-                return (a.endDate < b.endDate) ? 1 : -1;
-            });
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                promotions: promotions
-            });
+            Promotion.find({_category: req.params.categoryId}).skip((req.query.page - 1) * limit).limit(limit)
+                .populate('_provider', 'name avatar email phoneNumber address website fanpage rating').exec(function (err, promotions) {
+                if (err || !promotions) {
+                    errorCtrl.sendErrorMessage(res, 404,
+                        'Không có Promotion nào', []);
+                }
+                else {
+                    for (let i = 0; i < promotions.length; i++) {
+                        promotions[i] = promotions[i].toObject();
+                        promotions[i].isPinned = utilCtrl.isInArray(user.pinnedPromotion, promotions[i]._id);
+                        promotions[i].isRegistered = utilCtrl.isInArray(user.registeredPromotion, promotions[i]._id);
+                    }
+
+                    //Arrange list promotions in endDate order
+                    promotions.sort(function (a, b) {
+                        return (a.endDate < b.endDate) ? 1 : -1;
+                    });
+                    res.status(200).json({
+                        success: true,
+                        resultMessage: defaultSuccessMessage,
+                        promotions: promotions
+                    });
+                }
+            })
         }
-    })
+    });
 };
+
+
 
 module.exports.getAllCategories = (req, res) => {
     Category.find({}, (err, categories) => {
