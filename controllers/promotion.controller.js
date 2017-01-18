@@ -1,8 +1,7 @@
 "use strict";
 
 let mongoose = require('mongoose'),
-    querystring = require('querystring'),
-    http = require("http"),
+    https = require("https"),
     chalk = require('chalk'),
     errorCtrl = require('./error.controller'),
     utilCtrl = require('./util.controller');
@@ -55,7 +54,7 @@ module.exports.postNewPromotion = function (req, res) {
                             promotionCount: user.promotionCount
                         }
                     },
-                    {runValidators: true, override: true}, function (err, user) {
+                    {runValidators: true, override: true}, function (err) {
                         if (err) {
                             errorCtrl.sendErrorMessage(res, 404,
                                 defaultErrorMessage,
@@ -68,42 +67,24 @@ module.exports.postNewPromotion = function (req, res) {
 
                             res.send();
 
-                            var post_category = querystring.stringify({
+                            let body_category = JSON.stringify({
                                 'to' : '/topics/CATEGORY_' + promotion._category,
                                 'data' : {
-                                    "title" : "Khuyến mãi mới từ " + user.name,
-                                    "message" : promotion.title
+                                    'title' : "Khuyến mãi mới từ " + user.name,
+                                    'message' : promotion.title
                                 }
                             });
 
-                            var post_provider = querystring.stringify({
+                            let body_provider = JSON.stringify({
                                 'to' : '/topics/PROVIDER_' + promotion._provider,
                                 'data' : {
-                                    "title" : "Khuyến mãi mới từ " + user.name,
-                                    "message" : promotion.title
+                                    'title' : 'Khuyến mãi mới từ ' + user.name,
+                                    'message' : promotion.title
                                 }
                             });
 
-                            // An object of options to indicate where to post to
-                            var post_options = {
-                                url: 'https://fcm.googleapis.com/fcm/send',
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': 'key=AIzaSyAUqNvGIF1RJoSW0Mu9EouzZqW1YjxMEDc'
-                                }
-                            };
-
-                            var post_req = http.request(post_options, function(res) {
-                                res.setEncoding('utf8');
-                                res.on('data', function (chunk) {
-                                    console.log('Response: ' + chunk);
-                                });
-                            });
-
-                            post_req.write(post_category);
-                            post_req.write(post_provider);
-                            post_req.end();
+                            sendNotification(body_category);
+                            sendNotification(body_provider);
                         }
                     });
             }
@@ -111,6 +92,29 @@ module.exports.postNewPromotion = function (req, res) {
 
     });
 };
+
+function sendNotification(req_body) {
+    // An object of options to indicate where to post to
+    let post_options = {
+        host: 'fcm.googleapis.com',
+        path: '/fcm/send',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'key=AIzaSyAUqNvGIF1RJoSW0Mu9EouzZqW1YjxMEDc'
+        }
+    };
+
+    let post = https.request(post_options, function(res) {
+        res.setEncoding('utf8');
+        res.on('data', function (chunk) {
+            console.log('Response: ' + chunk);
+        });
+    });
+
+    post.write(req_body);
+    post.end();
+}
 
 module.exports.getPromotionInfo = function (req, res) {
     Promotion.findOne({_id: req.params.promotionId}, function (err, promotion) {
