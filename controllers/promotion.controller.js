@@ -16,7 +16,7 @@ let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
     commentLimit = 15,
     promotionLimit = 15,
-    distanceLimit = 10000; //Tối đa 5km
+    distanceLimit = 10000; //Tối đa 10km
 
 module.exports.postNewPromotion = function (req, res) {
     if (req.authenticatedUser.role != "PROVIDER") {
@@ -442,7 +442,7 @@ module.exports.createVoucher = (req, res) => {
                             _user: req.authenticatedUser.userId,
                             _promotion: promotion._id,
                             voucherCode: promotion.voucherCode,
-                            qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + promotion.voucherCode
+                            qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + promotion.voucherCode
                         }, (err, voucher) => {
                             if (err)
                                 errorCtrl.sendErrorMessage(res, 500,
