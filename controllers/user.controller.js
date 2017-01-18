@@ -253,7 +253,11 @@ function authenticateFacebookUser(fbUser, req, res) {
         newUser.email = fbUser.email;
         newUser.name = fbUser.name;
         newUser.avatar = fbUser.picture.data.url;
-        newUser.address = fbUser.location.name || 'Hồ Chí Minh, Việt Nam';
+        
+        newUser.address = 'Hồ Chí Minh, Việt Nam';
+        if (fbUser.location && fbUser.location.name)
+            newUser.address = fbUser.location.name;
+        
         newUser.phoneNumber = 'USER_NO_PHONE_NUMBER';
         newUser.password = crypto.randomBytes(16).toString('base64');
 
