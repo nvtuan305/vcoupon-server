@@ -25,7 +25,7 @@ module.exports = {
     },
 
     seedDB: {
-        seed: false,
+        seed: true,
         user: [
             {
                 "_id": "585256f1b10aa019d8d66740",
