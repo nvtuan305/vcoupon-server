@@ -626,6 +626,12 @@ module.exports.getPinnedPromotion = (req, res) => {
                 path: '_provider',
                 select: 'avatar name address'
             }, (err, promotions) => {
+                for (let i = 0; i < promotions.length; i++) {
+                    promotions[i] = promotions[i].toObject();
+                    promotions[i].isPinned = true;
+                    promotions[i].isRegistered = utilCtrl.isInArray(user.registeredPromotion, promotions[i]._id);
+                }
+
                 //Arrange list promotions in endDate order
                 promotions.sort(function (a, b) {
                     return (a.endDate < b.endDate) ? 1 : -1;
