@@ -647,50 +647,98 @@ module.exports.getPinnedPromotion = (req, res) => {
 };
 
 module.exports.getAllProviders = (req, res) => {
-    User.find({role: 'PROVIDER'})
-        .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
-        .sort('name')
-        .exec((err, users) => {
-            if (err)
-                errorHandler.sendSystemError(res, err);
+    User.findOne({_id: req.authenticatedUser.userId}, (err, user) => {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
+        }
+        else if (!user)
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+        else {
+            User.find({role: 'PROVIDER'})
+                .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
+                .sort('name')
+                .exec((err, users) => {
+                    if (err)
+                        errorHandler.sendSystemError(res, err);
 
-            else if (!users)
-                errorHandler.sendErrorMessage(res, 404, 'Không có dữ liệu', []);
+                    else if (!users)
+                        errorHandler.sendErrorMessage(res, 404, 'Không có dữ liệu', []);
 
-            else {
-                res.status(200).json({
-                    success: true,
-                    resultMessage: defaultSuccessMessage,
-                    users: users
+                    else {
+                        for (let i = 0; i < users.length; i++) {
+                            users[i] = users[i].toObject();
+                            users[i].isFollowing = false;
+
+                            for (let j = 0; j < user.subscribingTopic.length; j++) {
+                                if (user.subscribingTopic[j].subscribeType == "PROVIDER"
+                                    && users[i]._id.equals(user.subscribingTopic[j]._publisherId)) {
+                                    users[i].isFollowing = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        res.status(200).json({
+                            success: true,
+                            resultMessage: defaultSuccessMessage,
+                            users: users
+                        });
+                    }
                 });
-            }
-        });
+        }
+    });
 };
 
 module.exports.searchProvider = (req, res) => {
-    User.find({
-        role: 'PROVIDER',
-        nameNormalize: {$regex: utilCtrl.normalizeString(req.query.search)}
-    })
-        .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
-        .exec((err, users) => {
-            if (err)
-                errorHandler.sendErrorMessage(res, 500,
-                    defaultErrorMessage,
-                    errorHandler.getErrorMessage(err));
+    User.findOne({_id: req.authenticatedUser.userId}, (err, user) => {
+        if (err) {
+            errorCtrl.sendErrorMessage(res, 500,
+                defaultErrorMessage,
+                errorCtrl.getErrorMessage(err));
+        }
+        else if (!user)
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+        else {
+            User.find({
+                role: 'PROVIDER',
+                nameNormalize: {$regex: utilCtrl.normalizeString(req.query.search)}
+            })
+                .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
+                .exec((err, users) => {
+                    if (err)
+                        errorHandler.sendErrorMessage(res, 500,
+                            defaultErrorMessage,
+                            errorHandler.getErrorMessage(err));
 
-            else if (!users)
-                errorHandler.sendErrorMessage(res, 404,
-                    'Không có nhà cung cấp nào', []);
+                    else if (!users)
+                        errorHandler.sendErrorMessage(res, 404,
+                            'Không có nhà cung cấp nào', []);
 
-            else {
-                res.status(200).json({
-                    success: true,
-                    resultMessage: defaultSuccessMessage,
-                    users: users
-                });
-            }
-        })
+                    else {
+                        for (let i = 0; i < users.length; i++) {
+                            users[i] = users[i].toObject();
+                            users[i].isFollowing = false;
+
+                            for (let j = 0; j < user.subscribingTopic.length; j++) {
+                                if (user.subscribingTopic[j].subscribeType == "PROVIDER"
+                                    && users[i]._id.equals(user.subscribingTopic[j]._publisherId)) {
+                                    users[i].isFollowing = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        res.status(200).json({
+                            success: true,
+                            resultMessage: defaultSuccessMessage,
+                            users: users
+                        });
+                    }
+                })
+        }
+    });
 };
 
 module.exports.getVouchers = (req, res) => {

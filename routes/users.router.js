@@ -12,7 +12,9 @@ router
         userController.signUp(req, res);
     })
 
-    .get('/providers', (req, res) => {
+    .get('/providers', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
         if (req.query.search == undefined || req.query.search == "")
             userController.getAllProviders(req, res);
         else
