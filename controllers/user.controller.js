@@ -641,7 +641,7 @@ module.exports.getPinnedPromotion = (req, res) => {
 };
 
 module.exports.getAllProviders = (req, res) => {
-    User.find({role: 'PROVIDER'}, 'name avatar address')
+    User.find({role: 'PROVIDER'})
         .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
         .sort('name')
         .exec((err, users) => {
@@ -665,7 +665,7 @@ module.exports.searchProvider = (req, res) => {
     User.find({
         role: 'PROVIDER',
         nameNormalize: {$regex: utilCtrl.normalizeString(req.query.search)}
-    }, 'name avatar address')
+    })
         .skip((req.query.page - 1) * defaultPageSize).limit(defaultPageSize)
         .exec((err, users) => {
             if (err)
